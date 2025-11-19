@@ -117,8 +117,16 @@ class Minimap {
 
     drawPlayer(offsetX, offsetY) {
         const ctx = this.ctx;
-        const x = offsetX + this.player.roomX * this.cellSize + this.cellSize / 2;
-        const y = offsetY + this.player.roomY * this.cellSize + this.cellSize / 2;
+
+        // Oda içindeki pozisyonu hesapla
+        // player.position.x ve .z, -5 ile +5 arasında değişir (roomSize = 10)
+        // Bunu 0-1 aralığına normalize et
+        const normalizedX = (this.player.position.x + this.player.roomSize / 2) / this.player.roomSize;
+        const normalizedZ = (this.player.position.z + this.player.roomSize / 2) / this.player.roomSize;
+
+        // Minimap koordinatlarına çevir
+        const x = offsetX + this.player.roomX * this.cellSize + normalizedX * this.cellSize;
+        const y = offsetY + this.player.roomY * this.cellSize + normalizedZ * this.cellSize;
         const radius = 8;
 
         // Oyuncu dairesi
@@ -128,7 +136,8 @@ class Minimap {
         ctx.fill();
 
         // Yön göstergesi (ok)
-        const rotation = (this.player.rotation * Math.PI) / 180;
+        // player.rotation zaten radyan cinsinden
+        const rotation = this.player.rotation;
         const arrowLength = 12;
 
         ctx.strokeStyle = '#FFF';
