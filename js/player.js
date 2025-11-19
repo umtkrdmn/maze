@@ -76,31 +76,59 @@ class Player {
 
     rotateVector(x, z, rotation) {
         return {
-            x: x * Math.cos(rotation) - z * Math.sin(rotation),
-            z: x * Math.sin(rotation) + z * Math.cos(rotation)
+            x: x * Math.cos(rotation) + z * Math.sin(rotation),
+            z: -x * Math.sin(rotation) + z * Math.cos(rotation)
         };
     }
 
     canMoveTo(newX, newZ, maze) {
         const halfSize = this.roomSize / 2;
         const room = this.getCurrentRoom(maze);
+        const doorWidth = 2; // Kapı genişliği
 
-        // Duvar kontrolü
-        // Kuzey duvarı
-        if (!room.doors.north && newZ < -(halfSize - this.radius)) {
-            return false;
+        // Kuzey duvarı kontrolü
+        if (newZ < -(halfSize - this.radius)) {
+            if (!room.doors.north) {
+                return false; // Kapı yok, geçemezsin
+            } else {
+                // Kapı var ama kapı alanında mısın?
+                if (Math.abs(newX) > doorWidth / 2) {
+                    return false; // Kapı dışındasın, duvara çarpıyorsun
+                }
+            }
         }
-        // Güney duvarı
-        if (!room.doors.south && newZ > (halfSize - this.radius)) {
-            return false;
+
+        // Güney duvarı kontrolü
+        if (newZ > (halfSize - this.radius)) {
+            if (!room.doors.south) {
+                return false;
+            } else {
+                if (Math.abs(newX) > doorWidth / 2) {
+                    return false;
+                }
+            }
         }
-        // Doğu duvarı
-        if (!room.doors.east && newX > (halfSize - this.radius)) {
-            return false;
+
+        // Doğu duvarı kontrolü
+        if (newX > (halfSize - this.radius)) {
+            if (!room.doors.east) {
+                return false;
+            } else {
+                if (Math.abs(newZ) > doorWidth / 2) {
+                    return false;
+                }
+            }
         }
-        // Batı duvarı
-        if (!room.doors.west && newX < -(halfSize - this.radius)) {
-            return false;
+
+        // Batı duvarı kontrolü
+        if (newX < -(halfSize - this.radius)) {
+            if (!room.doors.west) {
+                return false;
+            } else {
+                if (Math.abs(newZ) > doorWidth / 2) {
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -109,11 +137,12 @@ class Player {
     checkDoorTransition(maze) {
         const halfSize = this.roomSize / 2;
         const room = this.getCurrentRoom(maze);
+        const doorWidth = 2;
         let roomChanged = false;
 
         // Kuzey kapısından geçiş
         if (room.doors.north && this.position.z < -(halfSize - 0.5)) {
-            if (this.roomY > 0) {
+            if (Math.abs(this.position.x) <= doorWidth / 2 && this.roomY > 0) {
                 this.roomY--;
                 this.position.z = halfSize - 1; // Yeni odanın güneyinden başla
                 roomChanged = true;
@@ -122,7 +151,7 @@ class Player {
 
         // Güney kapısından geçiş
         if (room.doors.south && this.position.z > (halfSize - 0.5)) {
-            if (this.roomY < maze.height - 1) {
+            if (Math.abs(this.position.x) <= doorWidth / 2 && this.roomY < maze.height - 1) {
                 this.roomY++;
                 this.position.z = -(halfSize - 1); // Yeni odanın kuzeyinden başla
                 roomChanged = true;
@@ -131,7 +160,7 @@ class Player {
 
         // Doğu kapısından geçiş
         if (room.doors.east && this.position.x > (halfSize - 0.5)) {
-            if (this.roomX < maze.width - 1) {
+            if (Math.abs(this.position.z) <= doorWidth / 2 && this.roomX < maze.width - 1) {
                 this.roomX++;
                 this.position.x = -(halfSize - 1); // Yeni odanın batısından başla
                 roomChanged = true;
@@ -140,7 +169,7 @@ class Player {
 
         // Batı kapısından geçiş
         if (room.doors.west && this.position.x < -(halfSize - 0.5)) {
-            if (this.roomX > 0) {
+            if (Math.abs(this.position.z) <= doorWidth / 2 && this.roomX > 0) {
                 this.roomX--;
                 this.position.x = halfSize - 1; // Yeni odanın doğusundan başla
                 roomChanged = true;
