@@ -236,9 +236,14 @@ class Renderer {
     }
 
     updateCamera() {
+        // Kamera pozisyonunu oyuncu pozisyonuna göre ayarla
+        this.camera.position.x = this.player.position.x;
+        this.camera.position.y = this.player.position.y;
+        this.camera.position.z = this.player.position.z;
+
         // Kamera rotasyonunu oyuncu rotasyonuna göre ayarla
-        const rotation = (this.player.rotation * Math.PI) / 180;
-        this.camera.rotation.y = rotation;
+        this.camera.rotation.y = this.player.rotation;
+        this.camera.rotation.order = 'YXZ'; // Doğru rotasyon sırası
     }
 
     render() {

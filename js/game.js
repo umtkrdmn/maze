@@ -35,24 +35,14 @@ class Game {
         this.renderer.canvas.addEventListener('click', () => {
             this.renderer.canvas.requestPointerLock();
         });
+
+        // Son oda pozisyonu (oda değişimi algılama için)
+        this.lastRoomX = this.player.roomX;
+        this.lastRoomY = this.player.roomY;
     }
 
     onKeyDown(e) {
         this.keys[e.key.toLowerCase()] = true;
-
-        // Hareket tuşları
-        if (e.key.toLowerCase() === 'w' || e.key === 'ArrowUp') {
-            this.moveForward();
-        }
-        if (e.key.toLowerCase() === 's' || e.key === 'ArrowDown') {
-            this.moveBackward();
-        }
-        if (e.key.toLowerCase() === 'a' || e.key === 'ArrowLeft') {
-            this.rotateLeft();
-        }
-        if (e.key.toLowerCase() === 'd' || e.key === 'ArrowRight') {
-            this.rotateRight();
-        }
     }
 
     onKeyUp(e) {
@@ -62,30 +52,8 @@ class Game {
     onMouseMove(e) {
         if (document.pointerLockElement === this.renderer.canvas) {
             const movementX = e.movementX || 0;
-            this.player.rotation += movementX * this.mouseSensitivity;
+            this.player.rotate(movementX);
         }
-    }
-
-    moveForward() {
-        if (this.player.moveForward(this.maze)) {
-            this.onRoomChange();
-        }
-    }
-
-    moveBackward() {
-        if (this.player.moveBackward(this.maze)) {
-            this.onRoomChange();
-        }
-    }
-
-    rotateLeft() {
-        this.player.rotateLeft();
-        this.updateDebugInfo();
-    }
-
-    rotateRight() {
-        this.player.rotateRight();
-        this.updateDebugInfo();
     }
 
     onRoomChange() {
@@ -119,11 +87,24 @@ class Game {
         // Ana oyun döngüsü
         requestAnimationFrame(() => this.gameLoop());
 
+        // Oyuncu hareketini güncelle
+        this.player.update(this.keys, this.maze);
+
+        // Oda değişimi kontrolü
+        if (this.player.roomX !== this.lastRoomX || this.player.roomY !== this.lastRoomY) {
+            this.lastRoomX = this.player.roomX;
+            this.lastRoomY = this.player.roomY;
+            this.onRoomChange();
+        }
+
         // Renderer güncelle
         this.renderer.update();
 
         // Minimap güncelle
         this.minimap.draw();
+
+        // Debug bilgilerini sürekli güncelle (yön değişimi için)
+        this.updateDebugInfo();
     }
 }
 

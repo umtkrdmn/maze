@@ -1,18 +1,160 @@
 // Oyuncu Kontrolü ve Hareket
 
 class Player {
-    constructor(startX, startY) {
+    constructor(startX, startY, roomSize = 10) {
         this.roomX = startX;
         this.roomY = startY;
-        this.rotation = 0; // Derece cinsinden (0 = Kuzey, 90 = Doğu, 180 = Güney, 270 = Batı)
-        this.isMoving = false;
-        this.moveSpeed = 0.05;
-        this.rotationSpeed = 2;
+        this.roomSize = roomSize;
+
+        // 3D pozisyon (odanın merkezi)
+        this.position = {
+            x: 0,
+            y: 1.6, // İnsan göz yüksekliği
+            z: 0
+        };
+
+        // Hareket
+        this.velocity = { x: 0, z: 0 };
+        this.moveSpeed = 0.05; // Yürüme hızı
+        this.rotationSpeed = 0.002; // Mouse sensitivitesi
+        this.rotation = 0; // Radyan cinsinden
+
+        // Collision
+        this.radius = 0.3; // Oyuncu yarıçapı (collision için)
+        this.doorThreshold = 4.5; // Kapıya ne kadar yaklaşınca geçiş yapılır
+    }
+
+    update(keys, maze) {
+        // Hareket vektörünü hesapla
+        let moveX = 0;
+        let moveZ = 0;
+
+        if (keys['w'] || keys['arrowup']) {
+            moveZ -= this.moveSpeed;
+        }
+        if (keys['s'] || keys['arrowdown']) {
+            moveZ += this.moveSpeed;
+        }
+        if (keys['a']) {
+            moveX -= this.moveSpeed;
+        }
+        if (keys['d']) {
+            moveX += this.moveSpeed;
+        }
+
+        // Rotasyona göre hareket vektörünü döndür
+        if (moveX !== 0 || moveZ !== 0) {
+            const rotatedMove = this.rotateVector(moveX, moveZ, this.rotation);
+
+            // Yeni pozisyonu hesapla
+            const newX = this.position.x + rotatedMove.x;
+            const newZ = this.position.z + rotatedMove.z;
+
+            // Collision kontrolü
+            if (this.canMoveTo(newX, this.position.z, maze)) {
+                this.position.x = newX;
+            }
+            if (this.canMoveTo(this.position.x, newZ, maze)) {
+                this.position.z = newZ;
+            }
+        }
+
+        // Ok tuşları ile rotasyon
+        if (keys['arrowleft']) {
+            this.rotation += 0.05;
+        }
+        if (keys['arrowright']) {
+            this.rotation -= 0.05;
+        }
+
+        // Kapıya yaklaşma kontrolü
+        this.checkDoorTransition(maze);
+    }
+
+    rotateVector(x, z, rotation) {
+        return {
+            x: x * Math.cos(rotation) - z * Math.sin(rotation),
+            z: x * Math.sin(rotation) + z * Math.cos(rotation)
+        };
+    }
+
+    canMoveTo(newX, newZ, maze) {
+        const halfSize = this.roomSize / 2;
+        const room = this.getCurrentRoom(maze);
+
+        // Duvar kontrolü
+        // Kuzey duvarı
+        if (!room.doors.north && newZ < -(halfSize - this.radius)) {
+            return false;
+        }
+        // Güney duvarı
+        if (!room.doors.south && newZ > (halfSize - this.radius)) {
+            return false;
+        }
+        // Doğu duvarı
+        if (!room.doors.east && newX > (halfSize - this.radius)) {
+            return false;
+        }
+        // Batı duvarı
+        if (!room.doors.west && newX < -(halfSize - this.radius)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    checkDoorTransition(maze) {
+        const halfSize = this.roomSize / 2;
+        const room = this.getCurrentRoom(maze);
+        let roomChanged = false;
+
+        // Kuzey kapısından geçiş
+        if (room.doors.north && this.position.z < -(halfSize - 0.5)) {
+            if (this.roomY > 0) {
+                this.roomY--;
+                this.position.z = halfSize - 1; // Yeni odanın güneyinden başla
+                roomChanged = true;
+            }
+        }
+
+        // Güney kapısından geçiş
+        if (room.doors.south && this.position.z > (halfSize - 0.5)) {
+            if (this.roomY < maze.height - 1) {
+                this.roomY++;
+                this.position.z = -(halfSize - 1); // Yeni odanın kuzeyinden başla
+                roomChanged = true;
+            }
+        }
+
+        // Doğu kapısından geçiş
+        if (room.doors.east && this.position.x > (halfSize - 0.5)) {
+            if (this.roomX < maze.width - 1) {
+                this.roomX++;
+                this.position.x = -(halfSize - 1); // Yeni odanın batısından başla
+                roomChanged = true;
+            }
+        }
+
+        // Batı kapısından geçiş
+        if (room.doors.west && this.position.x < -(halfSize - 0.5)) {
+            if (this.roomX > 0) {
+                this.roomX--;
+                this.position.x = halfSize - 1; // Yeni odanın doğusundan başla
+                roomChanged = true;
+            }
+        }
+
+        return roomChanged;
+    }
+
+    rotate(deltaX) {
+        this.rotation += deltaX * this.rotationSpeed;
     }
 
     getDirection() {
-        // Rotasyonu yön olarak döndür
-        const normalized = ((this.rotation % 360) + 360) % 360;
+        // Rotasyonu yön olarak döndür (eski sistem için)
+        const degrees = (this.rotation * 180 / Math.PI) % 360;
+        const normalized = ((degrees % 360) + 360) % 360;
         if (normalized >= 315 || normalized < 45) return 'north';
         if (normalized >= 45 && normalized < 135) return 'east';
         if (normalized >= 135 && normalized < 225) return 'south';
@@ -28,53 +170,6 @@ class Player {
             'west': 'Batı'
         };
         return names[dir];
-    }
-
-    moveForward(maze) {
-        const direction = this.getDirection();
-        if (maze.canMoveTo(this.roomX, this.roomY, direction)) {
-            switch(direction) {
-                case 'north': this.roomY--; break;
-                case 'south': this.roomY++; break;
-                case 'east': this.roomX++; break;
-                case 'west': this.roomX--; break;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    moveBackward(maze) {
-        const direction = this.getOppositeDirection();
-        if (maze.canMoveTo(this.roomX, this.roomY, direction)) {
-            switch(direction) {
-                case 'north': this.roomY--; break;
-                case 'south': this.roomY++; break;
-                case 'east': this.roomX++; break;
-                case 'west': this.roomX--; break;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    getOppositeDirection() {
-        const dir = this.getDirection();
-        const opposite = {
-            'north': 'south',
-            'south': 'north',
-            'east': 'west',
-            'west': 'east'
-        };
-        return opposite[dir];
-    }
-
-    rotateLeft() {
-        this.rotation -= 90;
-    }
-
-    rotateRight() {
-        this.rotation += 90;
     }
 
     getCurrentRoom(maze) {
