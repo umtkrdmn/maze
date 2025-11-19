@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Labirent Oyunu</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 3D Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Debug Info -->
+        <div id="debug-info">
+            <div id="current-room">Oda: (0, 0)</div>
+            <div id="player-direction">Yön: Kuzey</div>
+            <div id="available-doors">Kapılar: -</div>
+        </div>
+
+        <!-- Minimap -->
+        <div id="minimap-container">
+            <canvas id="minimap"></canvas>
+        </div>
+
+        <!-- Kontroller Bilgisi -->
+        <div id="controls-info">
+            <p><strong>Kontroller:</strong></p>
+            <p>W/↑: İleri Git</p>
+            <p>S/↓: Geri Git</p>
+            <p>A/←: Sola Dön</p>
+            <p>D/→: Sağa Dön</p>
+            <p>Mouse: Etrafı Bak</p>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="js/maze.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/minimap.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
