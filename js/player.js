@@ -33,10 +33,10 @@ class Player {
         let moveZ = 0;
 
         if (keys['w'] || keys['arrowup']) {
-            moveZ += this.moveSpeed; // Düzeltildi: ileri
+            moveZ -= this.moveSpeed; // İleri (Three.js: -Z = ileri)
         }
         if (keys['s'] || keys['arrowdown']) {
-            moveZ -= this.moveSpeed; // Düzeltildi: geri
+            moveZ += this.moveSpeed; // Geri (Three.js: +Z = geri)
         }
         if (keys['a']) {
             moveX -= this.moveSpeed; // Sola
