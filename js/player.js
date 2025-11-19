@@ -16,8 +16,11 @@ class Player {
         // Hareket
         this.velocity = { x: 0, z: 0 };
         this.moveSpeed = 0.05; // Yürüme hızı
-        this.rotationSpeed = 0.002; // Mouse sensitivitesi
-        this.rotation = 0; // Radyan cinsinden
+        this.rotationSpeed = 0.002; // Mouse sensitivitesi (yatay)
+        this.pitchSpeed = 0.002; // Mouse sensitivitesi (dikey)
+        this.rotation = 0; // Radyan cinsinden (yaw - yatay)
+        this.pitch = 0; // Radyan cinsinden (pitch - dikey bakış)
+        this.maxPitch = Math.PI / 3; // Maksimum yukarı/aşağı bakış açısı (60 derece)
 
         // Collision
         this.radius = 0.3; // Oyuncu yarıçapı (collision için)
@@ -30,16 +33,16 @@ class Player {
         let moveZ = 0;
 
         if (keys['w'] || keys['arrowup']) {
-            moveZ -= this.moveSpeed;
+            moveZ += this.moveSpeed; // Düzeltildi: ileri
         }
         if (keys['s'] || keys['arrowdown']) {
-            moveZ += this.moveSpeed;
+            moveZ -= this.moveSpeed; // Düzeltildi: geri
         }
         if (keys['a']) {
-            moveX -= this.moveSpeed;
+            moveX -= this.moveSpeed; // Sola
         }
         if (keys['d']) {
-            moveX += this.moveSpeed;
+            moveX += this.moveSpeed; // Sağa
         }
 
         // Rotasyona göre hareket vektörünü döndür
@@ -59,12 +62,12 @@ class Player {
             }
         }
 
-        // Ok tuşları ile rotasyon
+        // Ok tuşları ile yatay rotasyon (bakış açısı)
         if (keys['arrowleft']) {
-            this.rotation += 0.05;
+            this.rotation -= 0.05; // Düzeltildi: sola bak
         }
         if (keys['arrowright']) {
-            this.rotation -= 0.05;
+            this.rotation += 0.05; // Düzeltildi: sağa bak
         }
 
         // Kapıya yaklaşma kontrolü
@@ -147,8 +150,15 @@ class Player {
         return roomChanged;
     }
 
-    rotate(deltaX) {
-        this.rotation += deltaX * this.rotationSpeed;
+    rotate(deltaX, deltaY) {
+        // Yatay rotasyon (yaw) - Düzeltildi: ters yön
+        this.rotation -= deltaX * this.rotationSpeed;
+
+        // Dikey rotasyon (pitch) - Düzeltildi: ters yön
+        this.pitch -= deltaY * this.pitchSpeed;
+
+        // Pitch sınırla (çok yukarı veya aşağı bakmasın)
+        this.pitch = Math.max(-this.maxPitch, Math.min(this.maxPitch, this.pitch));
     }
 
     getDirection() {

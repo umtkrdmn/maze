@@ -52,7 +52,8 @@ class Game {
     onMouseMove(e) {
         if (document.pointerLockElement === this.renderer.canvas) {
             const movementX = e.movementX || 0;
-            this.player.rotate(movementX);
+            const movementY = e.movementY || 0;
+            this.player.rotate(movementX, movementY);
         }
     }
 

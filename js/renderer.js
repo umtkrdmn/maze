@@ -242,8 +242,9 @@ class Renderer {
         this.camera.position.z = this.player.position.z;
 
         // Kamera rotasyonunu oyuncu rotasyonuna göre ayarla
-        this.camera.rotation.y = this.player.rotation;
         this.camera.rotation.order = 'YXZ'; // Doğru rotasyon sırası
+        this.camera.rotation.y = this.player.rotation; // Yatay (yaw)
+        this.camera.rotation.x = this.player.pitch; // Dikey (pitch)
     }
 
     render() {
