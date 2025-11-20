@@ -664,18 +664,49 @@ class Renderer {
             // Video elementini sakla (temizlik için)
             adMaterial.userData.video = video;
         } else {
-            // Image texture
-            const textureLoader = new THREE.TextureLoader();
-            const imageTexture = textureLoader.load(adConfig.url,
-                () => console.log(`Ad loaded: ${adConfig.url}`),
-                undefined,
-                (err) => console.error(`Failed to load ad: ${adConfig.url}`, err)
-            );
+            // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
+            if (adConfig.url.startsWith('canvas:')) {
+                // Canvas texture oluştur
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
 
-            adMaterial = new THREE.MeshBasicMaterial({
-                map: imageTexture,
-                side: THREE.DoubleSide
-            });
+                // Arka plan rengi
+                const bgColor = adConfig.bgColor || '#FF6B6B';
+                const textColor = adConfig.textColor || '#FFFFFF';
+                const text = adConfig.text || 'REKLAM';
+
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Metin
+                ctx.fillStyle = textColor;
+                ctx.font = 'Bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+                const canvasTexture = new THREE.CanvasTexture(canvas);
+                adMaterial = new THREE.MeshBasicMaterial({
+                    map: canvasTexture,
+                    side: THREE.DoubleSide
+                });
+            } else {
+                // URL'den texture yükle
+                const textureLoader = new THREE.TextureLoader();
+                const imageTexture = textureLoader.load(adConfig.url,
+                    () => console.log(`Ad loaded: ${adConfig.url}`),
+                    undefined,
+                    (err) => console.error(`Failed to load ad: ${adConfig.url}`, err)
+                );
+
+                adMaterial = new THREE.MeshBasicMaterial({
+                    map: imageTexture,
+                    color: 0xFFFFFF, // Beyaz (texture yüklendiğinde tam renk)
+                    side: THREE.DoubleSide
+                });
+            }
         }
 
         const adPanel = new THREE.Mesh(adGeometry, adMaterial);

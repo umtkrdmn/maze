@@ -27,10 +27,13 @@ class Maze {
         // Başlangıç odasına (0,0) reklam ekle
         const startRoom = this.getRoom(0, 0);
         if (startRoom) {
-            // Kuzey duvarına resim reklam
+            // Kuzey duvarına resim reklam (Canvas tabanlı - internet gerektirmez)
             startRoom.setAd('north', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/FF6B6B/FFFFFF?text=Hoşgeldiniz!',
+                url: 'canvas:welcome',
+                text: 'HOŞGELDİNİZ!',
+                bgColor: '#FF6B6B',
+                textColor: '#FFFFFF',
                 width: 2,
                 height: 1,
                 position: { x: 0, y: 2.5 }
@@ -39,7 +42,10 @@ class Maze {
             // Doğu duvarına farklı reklam
             startRoom.setAd('east', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/4ECDC4/FFFFFF?text=Reklam+1',
+                url: 'canvas:ad1',
+                text: 'REKLAM 1',
+                bgColor: '#4ECDC4',
+                textColor: '#FFFFFF',
                 width: 2.5,
                 height: 1.2,
                 position: { x: 0, y: 2.5 }
@@ -51,7 +57,10 @@ class Maze {
         if (room1) {
             room1.setAd('west', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/FFE66D/000000?text=Yeni+Oda!',
+                url: 'canvas:newroom',
+                text: 'YENİ ODA!',
+                bgColor: '#FFE66D',
+                textColor: '#000000',
                 width: 2,
                 height: 1,
                 position: { x: 0, y: 2.5 }
@@ -59,7 +68,10 @@ class Maze {
 
             room1.setAd('north', {
                 type: 'image',
-                url: 'https://via.placeholder.com/600x300/95E1D3/000000?text=Özel+İndirim!',
+                url: 'canvas:discount',
+                text: 'ÖZEL İNDİRİM!',
+                bgColor: '#95E1D3',
+                textColor: '#000000',
                 width: 3,
                 height: 1.5,
                 position: { x: 0, y: 2.5 }
@@ -71,7 +83,10 @@ class Maze {
         if (room2) {
             room2.setAd('south', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/F38181/FFFFFF?text=Hoşgeldiniz+2',
+                url: 'canvas:welcome2',
+                text: 'HOŞGELDİNİZ 2',
+                bgColor: '#F38181',
+                textColor: '#FFFFFF',
                 width: 2,
                 height: 1,
                 position: { x: 0, y: 2.5 }
@@ -83,7 +98,10 @@ class Maze {
         if (room3) {
             room3.setAd('north', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/A8E6CF/000000?text=Test+Oda+1,1',
+                url: 'canvas:test',
+                text: 'TEST ODA 1,1',
+                bgColor: '#A8E6CF',
+                textColor: '#000000',
                 width: 2.5,
                 height: 1.2,
                 position: { x: 0, y: 2.5 }
@@ -91,7 +109,10 @@ class Maze {
 
             room3.setAd('west', {
                 type: 'image',
-                url: 'https://via.placeholder.com/400x200/FFD3B6/000000?text=Burası+1,1',
+                url: 'canvas:here',
+                text: 'BURASI 1,1',
+                bgColor: '#FFD3B6',
+                textColor: '#000000',
                 width: 2,
                 height: 1,
                 position: { x: 0, y: 2.5 }
