@@ -676,21 +676,21 @@ class Renderer {
 
         const adPanel = new THREE.Mesh(adGeometry, adMaterial);
 
-        // Konumlandırma - duvara göre
-        const offset = 0.11; // Duvardan hafifçe dışarı (z-fighting önlemek için)
+        // Konumlandırma - duvara göre (odanın içine doğru)
+        const offset = 0.11; // Duvardan hafifçe odaya doğru (z-fighting önlemek için)
 
         if (direction === 'north') {
-            adPanel.position.set(wallX + adOffsetX, adY, wallZ - offset);
-            adPanel.rotation.y = 0; // Güneye bakıyor
-        } else if (direction === 'south') {
             adPanel.position.set(wallX + adOffsetX, adY, wallZ + offset);
-            adPanel.rotation.y = Math.PI; // Kuzeye bakıyor
+            adPanel.rotation.y = 0; // Güneye bakıyor (odaya doğru)
+        } else if (direction === 'south') {
+            adPanel.position.set(wallX + adOffsetX, adY, wallZ - offset);
+            adPanel.rotation.y = Math.PI; // Kuzeye bakıyor (odaya doğru)
         } else if (direction === 'east') {
-            adPanel.position.set(wallX + offset, adY, wallZ + adOffsetX);
-            adPanel.rotation.y = -Math.PI / 2; // Batıya bakıyor
-        } else if (direction === 'west') {
             adPanel.position.set(wallX - offset, adY, wallZ + adOffsetX);
-            adPanel.rotation.y = Math.PI / 2; // Doğuya bakıyor
+            adPanel.rotation.y = -Math.PI / 2; // Batıya bakıyor (odaya doğru)
+        } else if (direction === 'west') {
+            adPanel.position.set(wallX + offset, adY, wallZ + adOffsetX);
+            adPanel.rotation.y = Math.PI / 2; // Doğuya bakıyor (odaya doğru)
         }
 
         this.scene.add(adPanel);

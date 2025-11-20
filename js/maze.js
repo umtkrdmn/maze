@@ -78,6 +78,26 @@ class Maze {
             });
         }
 
+        // (1,1) odasına reklam ekle
+        const room3 = this.getRoom(1, 1);
+        if (room3) {
+            room3.setAd('north', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/A8E6CF/000000?text=Test+Oda+1,1',
+                width: 2.5,
+                height: 1.2,
+                position: { x: 0, y: 2.5 }
+            });
+
+            room3.setAd('west', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/FFD3B6/000000?text=Burası+1,1',
+                width: 2,
+                height: 1,
+                position: { x: 0, y: 2.5 }
+            });
+        }
+
         console.log('Örnek reklamlar eklendi!');
     }
 
