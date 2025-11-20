@@ -516,39 +516,39 @@ class Renderer {
         });
 
         // ÖN YÜZ - Tokmak
-        // Ana topuz (ÇOK BÜYÜK) - Kapının sağ tarafında
+        // Ana topuz - Kapının sağ tarafında
         const doorHandle = new THREE.Mesh(
-            new THREE.SphereGeometry(0.15, 32, 32), // Çok daha büyük!
+            new THREE.SphereGeometry(0.08, 32, 32), // Normal boyut
             handleMaterial
         );
-        doorHandle.position.set(actualDoorWidth / 2 - 0.35, 0, 0.2);
+        doorHandle.position.set(actualDoorWidth / 2 - 0.3, 0, 0.12);
         doorGroup.add(doorHandle);
 
         // Topuz tabanı (daha gerçekçi için)
         const handleBase = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.13, 0.06, 24),
+            new THREE.CylinderGeometry(0.06, 0.07, 0.04, 24),
             handleMaterial
         );
         handleBase.rotation.z = Math.PI / 2;
-        handleBase.position.set(actualDoorWidth / 2 - 0.35, 0, 0.14);
+        handleBase.position.set(actualDoorWidth / 2 - 0.3, 0, 0.09);
         doorGroup.add(handleBase);
 
         // ARKA YÜZ - Tokmak
         // Ana topuz (arka)
         const doorHandleBack = new THREE.Mesh(
-            new THREE.SphereGeometry(0.15, 32, 32),
+            new THREE.SphereGeometry(0.08, 32, 32), // Normal boyut
             handleMaterial
         );
-        doorHandleBack.position.set(actualDoorWidth / 2 - 0.35, 0, -0.2);
+        doorHandleBack.position.set(actualDoorWidth / 2 - 0.3, 0, -0.12);
         doorGroup.add(doorHandleBack);
 
         // Topuz tabanı (arka)
         const handleBaseBack = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.13, 0.06, 24),
+            new THREE.CylinderGeometry(0.06, 0.07, 0.04, 24),
             handleMaterial
         );
         handleBaseBack.rotation.z = Math.PI / 2;
-        handleBaseBack.position.set(actualDoorWidth / 2 - 0.35, 0, -0.14);
+        handleBaseBack.position.set(actualDoorWidth / 2 - 0.3, 0, -0.09);
         doorGroup.add(handleBaseBack);
 
         return doorGroup;
