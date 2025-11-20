@@ -79,6 +79,7 @@ class Renderer {
         if (!this.currentRoom) return;
 
         const room = this.currentRoom;
+        console.log(`Rendering room (${room.x}, ${room.y}), ads:`, room.ads);
         const halfSize = this.roomSize / 2;
 
         // Zemin (Ahşap parke)
@@ -403,6 +404,7 @@ class Renderer {
         }
 
         // Reklam varsa ekle (hem kapılı hem kapısız duvarlarda gösterilebilir)
+        console.log(`Checking ads for ${direction} wall:`, room.ads ? room.ads[direction] : 'no ads object');
         if (room.ads && room.ads[direction]) {
             this.createAdPanel(room.ads[direction], direction, x, z);
         }
@@ -627,6 +629,8 @@ class Renderer {
     createAdPanel(adConfig, direction, wallX, wallZ) {
         if (!adConfig) return;
 
+        console.log(`Creating ad panel for ${direction} wall at (${wallX}, ${wallZ})`, adConfig);
+
         // Varsayılan değerler
         const adWidth = adConfig.width || 2;
         const adHeight = adConfig.height || 1;
@@ -695,6 +699,8 @@ class Renderer {
 
         this.scene.add(adPanel);
         this.currentRoomMeshes.push(adPanel);
+
+        console.log(`Ad panel added to scene at position:`, adPanel.position, `rotation:`, adPanel.rotation);
     }
 
     updateCamera() {
