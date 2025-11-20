@@ -145,8 +145,8 @@ class Minimap {
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(
-            x + Math.sin(rotation) * arrowLength,
-            y - Math.cos(rotation) * arrowLength
+            x - Math.sin(rotation) * arrowLength,
+            y + Math.cos(rotation) * arrowLength
         );
         ctx.stroke();
     }
