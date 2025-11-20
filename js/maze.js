@@ -37,6 +37,7 @@ class Maze {
         ];
 
         let adIndex = 0;
+        let nikeAdAdded = false; // Nike reklamını bir kere eklemek için
 
         for (let room of this.rooms) {
             // Her yön için kontrol et
@@ -45,17 +46,31 @@ class Maze {
             for (let direction of directions) {
                 // Eğer bu yönde kapı yoksa reklam ekle
                 if (!room.doors[direction]) {
-                    const ad = adColors[adIndex % adColors.length];
-                    room.setAd(direction, {
-                        type: 'image',
-                        url: `canvas:ad-${room.x}-${room.y}-${direction}`,
-                        text: `${ad.label}\nOda: ${room.x},${room.y}`,
-                        bgColor: ad.bg,
-                        textColor: ad.text,
-                        width: 2.5,
-                        height: 1.2,
-                        position: { x: 0, y: 2.5 }
-                    });
+                    // İlk kapısız duvara Nike reklamı ekle
+                    if (!nikeAdAdded) {
+                        room.setAd(direction, {
+                            type: 'image',
+                            url: 'https://static.nike.com/a/images/f_auto/dpr_1.0,cs_srgb/h_1513,c_limit/f3610e3a-2415-4892-9fe5-6c7646d21a86/never-done-inspiring-ad-revolution.jpg',
+                            width: 3,
+                            height: 2,
+                            position: { x: 0, y: 2.5 }
+                        });
+                        nikeAdAdded = true;
+                        console.log(`Nike reklamı eklendi: Oda (${room.x}, ${room.y}), Duvar: ${direction}`);
+                    } else {
+                        // Diğer duvarlara canvas reklamlar ekle
+                        const ad = adColors[adIndex % adColors.length];
+                        room.setAd(direction, {
+                            type: 'image',
+                            url: `canvas:ad-${room.x}-${room.y}-${direction}`,
+                            text: `${ad.label}\nOda: ${room.x},${room.y}`,
+                            bgColor: ad.bg,
+                            textColor: ad.text,
+                            width: 2.5,
+                            height: 1.2,
+                            position: { x: 0, y: 2.5 }
+                        });
+                    }
                     adIndex++;
                 }
             }
