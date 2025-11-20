@@ -115,8 +115,6 @@ class Renderer {
         const baseboardHeight = 0.15;
         const baseboardDepth = 0.1;
         const doorWidth = 2;
-        const frameThickness = 0.15;
-        const frameEdge = doorWidth / 2 + frameThickness / 2; // Çerçevenin dış kenarı
         const sideWidth = (this.roomSize - doorWidth) / 2; // 4 birim
 
         const baseboardMaterial = new THREE.MeshStandardMaterial({
@@ -132,7 +130,7 @@ class Renderer {
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northLeftBase.position.set(-frameEdge - sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
             this.scene.add(northLeftBase);
             this.currentRoomMeshes.push(northLeftBase);
 
@@ -141,7 +139,7 @@ class Renderer {
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northRightBase.position.set(frameEdge + sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
             this.scene.add(northRightBase);
             this.currentRoomMeshes.push(northRightBase);
         } else {
@@ -162,7 +160,7 @@ class Renderer {
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southLeftBase.position.set(-frameEdge - sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
             this.scene.add(southLeftBase);
             this.currentRoomMeshes.push(southLeftBase);
 
@@ -171,7 +169,7 @@ class Renderer {
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southRightBase.position.set(frameEdge + sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
             this.scene.add(southRightBase);
             this.currentRoomMeshes.push(southRightBase);
         } else {
@@ -192,7 +190,7 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastTopBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, -frameEdge - sideWidth / 2);
+            eastTopBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
             this.scene.add(eastTopBase);
             this.currentRoomMeshes.push(eastTopBase);
 
@@ -201,7 +199,7 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastBottomBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, frameEdge + sideWidth / 2);
+            eastBottomBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
             this.scene.add(eastBottomBase);
             this.currentRoomMeshes.push(eastBottomBase);
         } else {
@@ -222,7 +220,7 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westTopBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, -frameEdge - sideWidth / 2);
+            westTopBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
             this.scene.add(westTopBase);
             this.currentRoomMeshes.push(westTopBase);
 
@@ -231,7 +229,7 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westBottomBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, frameEdge + sideWidth / 2);
+            westBottomBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
             this.scene.add(westBottomBase);
             this.currentRoomMeshes.push(westBottomBase);
         } else {
@@ -320,12 +318,10 @@ class Renderer {
             const doorLeaf = this.createDoorLeaf(doorWidth, doorHeight, frameMaterial);
 
             // Konumlandırma
-            const frameEdge = doorWidth / 2 + frameThickness / 2; // Çerçevenin dış kenarı
-
             if (direction === 'north' || direction === 'south') {
-                // Duvarlar (çerçeveye bitişik)
-                leftWall.position.set(x - frameEdge - sideWallWidth / 2, this.wallHeight / 2, z);
-                rightWall.position.set(x + frameEdge + sideWallWidth / 2, this.wallHeight / 2, z);
+                // Duvarlar (doğrudan kapı açıklığına kadar)
+                leftWall.position.set(x - doorWidth / 2 - sideWallWidth / 2, this.wallHeight / 2, z);
+                rightWall.position.set(x + doorWidth / 2 + sideWallWidth / 2, this.wallHeight / 2, z);
                 topWall.position.set(x, this.wallHeight - (this.wallHeight - doorHeight) / 2, z);
 
                 // Kapı çerçevesi
@@ -338,10 +334,10 @@ class Renderer {
                 doorLeaf.position.set(x, doorHeight / 2, z + 0.15);
                 doorLeaf.rotation.y = 0; // Kapalı
             } else {
-                // Duvarlar (çerçeveye bitişik)
-                leftWall.position.set(x, this.wallHeight / 2, z - frameEdge - sideWallWidth / 2);
+                // Duvarlar (doğrudan kapı açıklığına kadar)
+                leftWall.position.set(x, this.wallHeight / 2, z - doorWidth / 2 - sideWallWidth / 2);
                 leftWall.rotation.y = Math.PI / 2;
-                rightWall.position.set(x, this.wallHeight / 2, z + frameEdge + sideWallWidth / 2);
+                rightWall.position.set(x, this.wallHeight / 2, z + doorWidth / 2 + sideWallWidth / 2);
                 rightWall.rotation.y = Math.PI / 2;
                 topWall.position.set(x, this.wallHeight - (this.wallHeight - doorHeight) / 2, z);
                 topWall.rotation.y = Math.PI / 2;
@@ -467,28 +463,30 @@ class Renderer {
         bottomPanelInner.position.set(0, -doorHeight / 4, 0.04);
         doorGroup.add(bottomPanelInner);
 
-        // Kapı tokmağı (BÜYÜK ve belirgin)
+        // Kapı tokmağı (ÇOK BÜYÜK ve parlak)
         const handleMaterial = new THREE.MeshStandardMaterial({
-            color: 0xC5A572, // Parlak altın/bronz
-            roughness: 0.3,
-            metalness: 0.8
+            color: 0xFFD700, // Parlak altın
+            roughness: 0.2,
+            metalness: 0.9,
+            emissive: 0xFFD700,
+            emissiveIntensity: 0.1
         });
 
-        // Ana topuz (BÜYÜK) - Kapının sağ tarafında
+        // Ana topuz (ÇOK BÜYÜK) - Kapının sağ tarafında
         const doorHandle = new THREE.Mesh(
-            new THREE.SphereGeometry(0.1, 24, 24), // Daha da büyük
+            new THREE.SphereGeometry(0.15, 32, 32), // Çok daha büyük!
             handleMaterial
         );
-        doorHandle.position.set(actualDoorWidth / 2 - 0.3, 0, 0.15);
+        doorHandle.position.set(actualDoorWidth / 2 - 0.35, 0, 0.2);
         doorGroup.add(doorHandle);
 
         // Topuz tabanı (daha gerçekçi için)
         const handleBase = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.08, 0.09, 0.04, 20),
+            new THREE.CylinderGeometry(0.12, 0.13, 0.06, 24),
             handleMaterial
         );
         handleBase.rotation.z = Math.PI / 2;
-        handleBase.position.set(actualDoorWidth / 2 - 0.3, 0, 0.11);
+        handleBase.position.set(actualDoorWidth / 2 - 0.35, 0, 0.14);
         doorGroup.add(handleBase);
 
         return doorGroup;
