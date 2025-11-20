@@ -91,8 +91,8 @@ class Renderer {
         this.currentRoomMeshes.push(ceiling);
 
         // Duvarlar
-        this.createWall('north', room.doors.north, 0, halfSize, room);
-        this.createWall('south', room.doors.south, 0, -halfSize, room);
+        this.createWall('north', room.doors.north, 0, -halfSize, room);
+        this.createWall('south', room.doors.south, 0, halfSize, room);
         this.createWall('east', room.doors.east, halfSize, 0, room);
         this.createWall('west', room.doors.west, -halfSize, 0, room);
     }
@@ -208,16 +208,16 @@ class Renderer {
         const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
         const sprite = new THREE.Sprite(spriteMaterial);
 
-        // Konumlandırma (kapı üstü)
+        // Konumlandırma (kapı üstü, odanın içinde)
         const labelHeight = 3.5;
         if (direction === 'north') {
-            sprite.position.set(x, labelHeight, z - 0.5);
+            sprite.position.set(x, labelHeight, z + 1); // Odaya doğru (+Z yönünde)
         } else if (direction === 'south') {
-            sprite.position.set(x, labelHeight, z + 0.5);
+            sprite.position.set(x, labelHeight, z - 1); // Odaya doğru (-Z yönünde)
         } else if (direction === 'east') {
-            sprite.position.set(x + 0.5, labelHeight, z);
+            sprite.position.set(x - 1, labelHeight, z); // Odaya doğru (-X yönünde)
         } else if (direction === 'west') {
-            sprite.position.set(x - 0.5, labelHeight, z);
+            sprite.position.set(x + 1, labelHeight, z); // Odaya doğru (+X yönünde)
         }
 
         sprite.scale.set(2, 1, 1);
