@@ -116,6 +116,7 @@ class Renderer {
         const baseboardDepth = 0.1;
         const doorWidth = 2;
         const sideWidth = (this.roomSize - doorWidth) / 2; // 4 birim
+        const wallThickness = 0.2; // Duvar kalınlığı
 
         const baseboardMaterial = new THREE.MeshStandardMaterial({
             color: 0x6B4423, // Koyu kahverengi
@@ -123,23 +124,23 @@ class Renderer {
             metalness: 0.1
         });
 
-        // Kuzey baseboard (kapı varsa bölünmüş)
+        // Kuzey baseboard (kapı varsa bölünmüş) - duvarın iç kenarından başlayıp odaya uzanır
         if (room.doors.north) {
-            // Sol parça (duvarla aynı pozisyon)
+            // Sol parça
             const northLeftBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, -halfSize + wallThickness / 2 + baseboardDepth / 2);
             this.scene.add(northLeftBase);
             this.currentRoomMeshes.push(northLeftBase);
 
-            // Sağ parça (duvarla aynı pozisyon)
+            // Sağ parça
             const northRightBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, -halfSize + wallThickness / 2 + baseboardDepth / 2);
             this.scene.add(northRightBase);
             this.currentRoomMeshes.push(northRightBase);
         } else {
@@ -148,28 +149,28 @@ class Renderer {
                 new THREE.BoxGeometry(this.roomSize, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northBase.position.set(0, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northBase.position.set(0, baseboardHeight / 2, -halfSize + wallThickness / 2 + baseboardDepth / 2);
             this.scene.add(northBase);
             this.currentRoomMeshes.push(northBase);
         }
 
-        // Güney baseboard (kapı varsa bölünmüş)
+        // Güney baseboard (kapı varsa bölünmüş) - duvarın iç kenarından başlayıp odaya uzanır
         if (room.doors.south) {
-            // Sol parça (duvarla aynı pozisyon)
+            // Sol parça
             const southLeftBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southLeftBase.position.set(-doorWidth / 2 - sideWidth / 2, baseboardHeight / 2, halfSize - wallThickness / 2 - baseboardDepth / 2);
             this.scene.add(southLeftBase);
             this.currentRoomMeshes.push(southLeftBase);
 
-            // Sağ parça (duvarla aynı pozisyon)
+            // Sağ parça
             const southRightBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southRightBase.position.set(doorWidth / 2 + sideWidth / 2, baseboardHeight / 2, halfSize - wallThickness / 2 - baseboardDepth / 2);
             this.scene.add(southRightBase);
             this.currentRoomMeshes.push(southRightBase);
         } else {
@@ -178,28 +179,28 @@ class Renderer {
                 new THREE.BoxGeometry(this.roomSize, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southBase.position.set(0, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southBase.position.set(0, baseboardHeight / 2, halfSize - wallThickness / 2 - baseboardDepth / 2);
             this.scene.add(southBase);
             this.currentRoomMeshes.push(southBase);
         }
 
-        // Doğu baseboard (kapı varsa bölünmüş)
+        // Doğu baseboard (kapı varsa bölünmüş) - duvarın iç kenarından başlayıp odaya uzanır
         if (room.doors.east) {
-            // Üst parça (duvarla aynı pozisyon)
+            // Üst parça
             const eastTopBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastTopBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
+            eastTopBase.position.set(halfSize - wallThickness / 2 - baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
             this.scene.add(eastTopBase);
             this.currentRoomMeshes.push(eastTopBase);
 
-            // Alt parça (duvarla aynı pozisyon)
+            // Alt parça
             const eastBottomBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastBottomBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
+            eastBottomBase.position.set(halfSize - wallThickness / 2 - baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
             this.scene.add(eastBottomBase);
             this.currentRoomMeshes.push(eastBottomBase);
         } else {
@@ -208,28 +209,28 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, this.roomSize),
                 baseboardMaterial
             );
-            eastBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, 0);
+            eastBase.position.set(halfSize - wallThickness / 2 - baseboardDepth / 2, baseboardHeight / 2, 0);
             this.scene.add(eastBase);
             this.currentRoomMeshes.push(eastBase);
         }
 
-        // Batı baseboard (kapı varsa bölünmüş)
+        // Batı baseboard (kapı varsa bölünmüş) - duvarın iç kenarından başlayıp odaya uzanır
         if (room.doors.west) {
-            // Üst parça (duvarla aynı pozisyon)
+            // Üst parça
             const westTopBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westTopBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
+            westTopBase.position.set(-halfSize + wallThickness / 2 + baseboardDepth / 2, baseboardHeight / 2, -doorWidth / 2 - sideWidth / 2);
             this.scene.add(westTopBase);
             this.currentRoomMeshes.push(westTopBase);
 
-            // Alt parça (duvarla aynı pozisyon)
+            // Alt parça
             const westBottomBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westBottomBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
+            westBottomBase.position.set(-halfSize + wallThickness / 2 + baseboardDepth / 2, baseboardHeight / 2, doorWidth / 2 + sideWidth / 2);
             this.scene.add(westBottomBase);
             this.currentRoomMeshes.push(westBottomBase);
         } else {
@@ -238,7 +239,7 @@ class Renderer {
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, this.roomSize),
                 baseboardMaterial
             );
-            westBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, 0);
+            westBase.position.set(-halfSize + wallThickness / 2 + baseboardDepth / 2, baseboardHeight / 2, 0);
             this.scene.add(westBase);
             this.currentRoomMeshes.push(westBase);
         }
