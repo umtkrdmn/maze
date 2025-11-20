@@ -115,6 +115,8 @@ class Renderer {
         const baseboardHeight = 0.15;
         const baseboardDepth = 0.1;
         const doorWidth = 2;
+        const frameThickness = 0.15;
+        const frameEdge = doorWidth / 2 + frameThickness / 2; // Çerçevenin dış kenarı
         const sideWidth = (this.roomSize - doorWidth) / 2; // 4 birim
 
         const baseboardMaterial = new THREE.MeshStandardMaterial({
@@ -125,21 +127,21 @@ class Renderer {
 
         // Kuzey baseboard (kapı varsa bölünmüş)
         if (room.doors.north) {
-            // Sol parça (Z = -halfSize konumunda, X -halfSize'den -doorWidth/2'ye kadar)
+            // Sol parça (duvarla aynı pozisyon)
             const northLeftBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northLeftBase.position.set(-halfSize + sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northLeftBase.position.set(-frameEdge - sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
             this.scene.add(northLeftBase);
             this.currentRoomMeshes.push(northLeftBase);
 
-            // Sağ parça (Z = -halfSize konumunda, X doorWidth/2'den halfSize'e kadar)
+            // Sağ parça (duvarla aynı pozisyon)
             const northRightBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            northRightBase.position.set(halfSize - sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
+            northRightBase.position.set(frameEdge + sideWidth / 2, baseboardHeight / 2, -halfSize + baseboardDepth / 2);
             this.scene.add(northRightBase);
             this.currentRoomMeshes.push(northRightBase);
         } else {
@@ -155,21 +157,21 @@ class Renderer {
 
         // Güney baseboard (kapı varsa bölünmüş)
         if (room.doors.south) {
-            // Sol parça (Z = halfSize konumunda, X -halfSize'den -doorWidth/2'ye kadar)
+            // Sol parça (duvarla aynı pozisyon)
             const southLeftBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southLeftBase.position.set(-halfSize + sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southLeftBase.position.set(-frameEdge - sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
             this.scene.add(southLeftBase);
             this.currentRoomMeshes.push(southLeftBase);
 
-            // Sağ parça (Z = halfSize konumunda, X doorWidth/2'den halfSize'e kadar)
+            // Sağ parça (duvarla aynı pozisyon)
             const southRightBase = new THREE.Mesh(
                 new THREE.BoxGeometry(sideWidth, baseboardHeight, baseboardDepth),
                 baseboardMaterial
             );
-            southRightBase.position.set(halfSize - sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
+            southRightBase.position.set(frameEdge + sideWidth / 2, baseboardHeight / 2, halfSize - baseboardDepth / 2);
             this.scene.add(southRightBase);
             this.currentRoomMeshes.push(southRightBase);
         } else {
@@ -185,21 +187,21 @@ class Renderer {
 
         // Doğu baseboard (kapı varsa bölünmüş)
         if (room.doors.east) {
-            // Üst parça (X = halfSize konumunda, Z -halfSize'den -doorWidth/2'ye kadar)
+            // Üst parça (duvarla aynı pozisyon)
             const eastTopBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastTopBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, -halfSize + sideWidth / 2);
+            eastTopBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, -frameEdge - sideWidth / 2);
             this.scene.add(eastTopBase);
             this.currentRoomMeshes.push(eastTopBase);
 
-            // Alt parça (X = halfSize konumunda, Z doorWidth/2'den halfSize'e kadar)
+            // Alt parça (duvarla aynı pozisyon)
             const eastBottomBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            eastBottomBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, halfSize - sideWidth / 2);
+            eastBottomBase.position.set(halfSize - baseboardDepth / 2, baseboardHeight / 2, frameEdge + sideWidth / 2);
             this.scene.add(eastBottomBase);
             this.currentRoomMeshes.push(eastBottomBase);
         } else {
@@ -215,21 +217,21 @@ class Renderer {
 
         // Batı baseboard (kapı varsa bölünmüş)
         if (room.doors.west) {
-            // Üst parça (X = -halfSize konumunda, Z -halfSize'den -doorWidth/2'ye kadar)
+            // Üst parça (duvarla aynı pozisyon)
             const westTopBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westTopBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, -halfSize + sideWidth / 2);
+            westTopBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, -frameEdge - sideWidth / 2);
             this.scene.add(westTopBase);
             this.currentRoomMeshes.push(westTopBase);
 
-            // Alt parça (X = -halfSize konumunda, Z doorWidth/2'den halfSize'e kadar)
+            // Alt parça (duvarla aynı pozisyon)
             const westBottomBase = new THREE.Mesh(
                 new THREE.BoxGeometry(baseboardDepth, baseboardHeight, sideWidth),
                 baseboardMaterial
             );
-            westBottomBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, halfSize - sideWidth / 2);
+            westBottomBase.position.set(-halfSize + baseboardDepth / 2, baseboardHeight / 2, frameEdge + sideWidth / 2);
             this.scene.add(westBottomBase);
             this.currentRoomMeshes.push(westBottomBase);
         } else {
@@ -318,10 +320,12 @@ class Renderer {
             const doorLeaf = this.createDoorLeaf(doorWidth, doorHeight, frameMaterial);
 
             // Konumlandırma
+            const frameEdge = doorWidth / 2 + frameThickness / 2; // Çerçevenin dış kenarı
+
             if (direction === 'north' || direction === 'south') {
-                // Duvarlar
-                leftWall.position.set(x - this.roomSize / 4 - sideWallWidth / 4, this.wallHeight / 2, z);
-                rightWall.position.set(x + this.roomSize / 4 + sideWallWidth / 4, this.wallHeight / 2, z);
+                // Duvarlar (çerçeveye bitişik)
+                leftWall.position.set(x - frameEdge - sideWallWidth / 2, this.wallHeight / 2, z);
+                rightWall.position.set(x + frameEdge + sideWallWidth / 2, this.wallHeight / 2, z);
                 topWall.position.set(x, this.wallHeight - (this.wallHeight - doorHeight) / 2, z);
 
                 // Kapı çerçevesi
@@ -334,10 +338,10 @@ class Renderer {
                 doorLeaf.position.set(x, doorHeight / 2, z + 0.15);
                 doorLeaf.rotation.y = 0; // Kapalı
             } else {
-                // Duvarlar
-                leftWall.position.set(x, this.wallHeight / 2, z - this.roomSize / 4 - sideWallWidth / 4);
+                // Duvarlar (çerçeveye bitişik)
+                leftWall.position.set(x, this.wallHeight / 2, z - frameEdge - sideWallWidth / 2);
                 leftWall.rotation.y = Math.PI / 2;
-                rightWall.position.set(x, this.wallHeight / 2, z + this.roomSize / 4 + sideWallWidth / 4);
+                rightWall.position.set(x, this.wallHeight / 2, z + frameEdge + sideWallWidth / 2);
                 rightWall.rotation.y = Math.PI / 2;
                 topWall.position.set(x, this.wallHeight - (this.wallHeight - doorHeight) / 2, z);
                 topWall.rotation.y = Math.PI / 2;
@@ -400,14 +404,16 @@ class Renderer {
         // Kapı kanadı grubu
         const doorGroup = new THREE.Group();
 
-        // Kapı ana gövdesi (çerçeveye tam oturacak genişlikte)
+        // Kapı ana gövdesi (çerçeve kalınlığını hesaba katarak)
         const doorMaterial = new THREE.MeshStandardMaterial({
             color: 0x8B6F47, // Orta ton kahverengi ahşap
             roughness: 0.75,
             metalness: 0.1
         });
 
-        const actualDoorWidth = doorWidth - 0.02; // Çerçeveye tam oturacak
+        const frameThickness = 0.15;
+        // Çerçevenin iç genişliği = doorWidth - frameThickness (çünkü çerçeve doorWidth/2'de merkezlenmiş)
+        const actualDoorWidth = doorWidth - frameThickness; // 2 - 0.15 = 1.85
         const doorBody = new THREE.Mesh(
             new THREE.BoxGeometry(actualDoorWidth, doorHeight, 0.08),
             doorMaterial
@@ -423,7 +429,7 @@ class Renderer {
 
         // Üst panel çerçevesi (daha kalın ve belirgin)
         const topPanelOuter = new THREE.Mesh(
-            new THREE.BoxGeometry(actualDoorWidth - 0.25, doorHeight / 2 - 0.4, 0.04),
+            new THREE.BoxGeometry(actualDoorWidth - 0.3, doorHeight / 2 - 0.4, 0.04),
             panelMaterial
         );
         topPanelOuter.position.set(0, doorHeight / 4, 0.06);
@@ -431,7 +437,7 @@ class Renderer {
 
         // Üst panel iç çerçeve (derinlik için)
         const topPanelInner = new THREE.Mesh(
-            new THREE.BoxGeometry(actualDoorWidth - 0.4, doorHeight / 2 - 0.55, 0.02),
+            new THREE.BoxGeometry(actualDoorWidth - 0.5, doorHeight / 2 - 0.55, 0.02),
             new THREE.MeshStandardMaterial({
                 color: 0x5A4332,
                 roughness: 0.9,
@@ -443,7 +449,7 @@ class Renderer {
 
         // Alt panel çerçevesi (daha kalın ve belirgin)
         const bottomPanelOuter = new THREE.Mesh(
-            new THREE.BoxGeometry(actualDoorWidth - 0.25, doorHeight / 2 - 0.4, 0.04),
+            new THREE.BoxGeometry(actualDoorWidth - 0.3, doorHeight / 2 - 0.4, 0.04),
             panelMaterial
         );
         bottomPanelOuter.position.set(0, -doorHeight / 4, 0.06);
@@ -451,7 +457,7 @@ class Renderer {
 
         // Alt panel iç çerçeve
         const bottomPanelInner = new THREE.Mesh(
-            new THREE.BoxGeometry(actualDoorWidth - 0.4, doorHeight / 2 - 0.55, 0.02),
+            new THREE.BoxGeometry(actualDoorWidth - 0.5, doorHeight / 2 - 0.55, 0.02),
             new THREE.MeshStandardMaterial({
                 color: 0x5A4332,
                 roughness: 0.9,
@@ -463,26 +469,26 @@ class Renderer {
 
         // Kapı tokmağı (BÜYÜK ve belirgin)
         const handleMaterial = new THREE.MeshStandardMaterial({
-            color: 0x8B7355, // Koyu bronz
-            roughness: 0.4,
-            metalness: 0.7
+            color: 0xC5A572, // Parlak altın/bronz
+            roughness: 0.3,
+            metalness: 0.8
         });
 
-        // Ana topuz (BÜYÜK) - Kapının içinde, sağ tarafta
+        // Ana topuz (BÜYÜK) - Kapının sağ tarafında
         const doorHandle = new THREE.Mesh(
-            new THREE.SphereGeometry(0.08, 20, 20),
+            new THREE.SphereGeometry(0.1, 24, 24), // Daha da büyük
             handleMaterial
         );
-        doorHandle.position.set(actualDoorWidth / 2 - 0.25, 0, 0.12);
+        doorHandle.position.set(actualDoorWidth / 2 - 0.3, 0, 0.15);
         doorGroup.add(doorHandle);
 
         // Topuz tabanı (daha gerçekçi için)
         const handleBase = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.06, 0.07, 0.03, 16),
+            new THREE.CylinderGeometry(0.08, 0.09, 0.04, 20),
             handleMaterial
         );
         handleBase.rotation.z = Math.PI / 2;
-        handleBase.position.set(actualDoorWidth / 2 - 0.25, 0, 0.09);
+        handleBase.position.set(actualDoorWidth / 2 - 0.3, 0, 0.11);
         doorGroup.add(handleBase);
 
         return doorGroup;
