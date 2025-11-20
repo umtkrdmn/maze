@@ -137,6 +137,7 @@ class Minimap {
 
         // Yön göstergesi (ok)
         // player.rotation zaten radyan cinsinden
+        // Three.js'de +rotation = sola dönüş, bu yüzden sin'i ters çeviriyoruz
         const rotation = this.player.rotation;
         const arrowLength = 12;
 
@@ -145,7 +146,7 @@ class Minimap {
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(
-            x + Math.sin(rotation) * arrowLength,
+            x - Math.sin(rotation) * arrowLength,
             y - Math.cos(rotation) * arrowLength
         );
         ctx.stroke();

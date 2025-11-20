@@ -191,13 +191,14 @@ class Player {
     }
 
     getDirection() {
-        // Rotasyonu yön olarak döndür (eski sistem için)
+        // Rotasyonu yön olarak döndür
+        // Three.js'de +rotation = sola dönüş, bu yüzden doğu/batı ters
         const degrees = (this.rotation * 180 / Math.PI) % 360;
         const normalized = ((degrees % 360) + 360) % 360;
         if (normalized >= 315 || normalized < 45) return 'north';
-        if (normalized >= 45 && normalized < 135) return 'east';
+        if (normalized >= 45 && normalized < 135) return 'west'; // Ters!
         if (normalized >= 135 && normalized < 225) return 'south';
-        return 'west';
+        return 'east'; // Ters!
     }
 
     getDirectionName() {
