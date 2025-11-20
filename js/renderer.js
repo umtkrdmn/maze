@@ -424,6 +424,7 @@ class Renderer {
             metalness: 0.1
         });
 
+        // ÖN YÜZ - Paneller
         // Üst panel çerçevesi (daha kalın ve belirgin)
         const topPanelOuter = new THREE.Mesh(
             new THREE.BoxGeometry(actualDoorWidth - 0.3, doorHeight / 2 - 0.4, 0.04),
@@ -464,6 +465,47 @@ class Renderer {
         bottomPanelInner.position.set(0, -doorHeight / 4, 0.04);
         doorGroup.add(bottomPanelInner);
 
+        // ARKA YÜZ - Paneller
+        // Üst panel çerçevesi (arka)
+        const topPanelOuterBack = new THREE.Mesh(
+            new THREE.BoxGeometry(actualDoorWidth - 0.3, doorHeight / 2 - 0.4, 0.04),
+            panelMaterial
+        );
+        topPanelOuterBack.position.set(0, doorHeight / 4, -0.06);
+        doorGroup.add(topPanelOuterBack);
+
+        // Üst panel iç çerçeve (arka)
+        const topPanelInnerBack = new THREE.Mesh(
+            new THREE.BoxGeometry(actualDoorWidth - 0.5, doorHeight / 2 - 0.55, 0.02),
+            new THREE.MeshStandardMaterial({
+                color: 0x5A4332,
+                roughness: 0.9,
+                metalness: 0.05
+            })
+        );
+        topPanelInnerBack.position.set(0, doorHeight / 4, -0.04);
+        doorGroup.add(topPanelInnerBack);
+
+        // Alt panel çerçevesi (arka)
+        const bottomPanelOuterBack = new THREE.Mesh(
+            new THREE.BoxGeometry(actualDoorWidth - 0.3, doorHeight / 2 - 0.4, 0.04),
+            panelMaterial
+        );
+        bottomPanelOuterBack.position.set(0, -doorHeight / 4, -0.06);
+        doorGroup.add(bottomPanelOuterBack);
+
+        // Alt panel iç çerçeve (arka)
+        const bottomPanelInnerBack = new THREE.Mesh(
+            new THREE.BoxGeometry(actualDoorWidth - 0.5, doorHeight / 2 - 0.55, 0.02),
+            new THREE.MeshStandardMaterial({
+                color: 0x5A4332,
+                roughness: 0.9,
+                metalness: 0.05
+            })
+        );
+        bottomPanelInnerBack.position.set(0, -doorHeight / 4, -0.04);
+        doorGroup.add(bottomPanelInnerBack);
+
         // Kapı tokmağı (ÇOK BÜYÜK ve parlak)
         const handleMaterial = new THREE.MeshStandardMaterial({
             color: 0xFFD700, // Parlak altın
@@ -473,6 +515,7 @@ class Renderer {
             emissiveIntensity: 0.1
         });
 
+        // ÖN YÜZ - Tokmak
         // Ana topuz (ÇOK BÜYÜK) - Kapının sağ tarafında
         const doorHandle = new THREE.Mesh(
             new THREE.SphereGeometry(0.15, 32, 32), // Çok daha büyük!
@@ -489,6 +532,24 @@ class Renderer {
         handleBase.rotation.z = Math.PI / 2;
         handleBase.position.set(actualDoorWidth / 2 - 0.35, 0, 0.14);
         doorGroup.add(handleBase);
+
+        // ARKA YÜZ - Tokmak
+        // Ana topuz (arka)
+        const doorHandleBack = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 32, 32),
+            handleMaterial
+        );
+        doorHandleBack.position.set(actualDoorWidth / 2 - 0.35, 0, -0.2);
+        doorGroup.add(doorHandleBack);
+
+        // Topuz tabanı (arka)
+        const handleBaseBack = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.13, 0.06, 24),
+            handleMaterial
+        );
+        handleBaseBack.rotation.z = Math.PI / 2;
+        handleBaseBack.position.set(actualDoorWidth / 2 - 0.35, 0, -0.14);
+        doorGroup.add(handleBaseBack);
 
         return doorGroup;
     }
