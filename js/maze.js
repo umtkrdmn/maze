@@ -18,6 +18,67 @@ class Maze {
 
         // Rastgele kapılar oluştur (basit algoritma)
         this.generateDoors();
+
+        // Örnek reklamlar ekle (test için)
+        this.addSampleAds();
+    }
+
+    addSampleAds() {
+        // Başlangıç odasına (0,0) reklam ekle
+        const startRoom = this.getRoom(0, 0);
+        if (startRoom) {
+            // Kuzey duvarına resim reklam
+            startRoom.setAd('north', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/FF6B6B/FFFFFF?text=Hoşgeldiniz!',
+                width: 2,
+                height: 1,
+                position: { x: 0, y: 2.5 }
+            });
+
+            // Doğu duvarına farklı reklam
+            startRoom.setAd('east', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/4ECDC4/FFFFFF?text=Reklam+1',
+                width: 2.5,
+                height: 1.2,
+                position: { x: 0, y: 2.5 }
+            });
+        }
+
+        // (1,0) odasına reklam ekle
+        const room1 = this.getRoom(1, 0);
+        if (room1) {
+            room1.setAd('west', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/FFE66D/000000?text=Yeni+Oda!',
+                width: 2,
+                height: 1,
+                position: { x: 0, y: 2.5 }
+            });
+
+            room1.setAd('north', {
+                type: 'image',
+                url: 'https://via.placeholder.com/600x300/95E1D3/000000?text=Özel+İndirim!',
+                width: 3,
+                height: 1.5,
+                position: { x: 0, y: 2.5 }
+            });
+        }
+
+        // (0,1) odasına reklam ekle
+        const room2 = this.getRoom(0, 1);
+        if (room2) {
+            room2.setAd('south', {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x200/F38181/FFFFFF?text=Hoşgeldiniz+2',
+                width: 2,
+                height: 1,
+                position: { x: 0, y: 2.5 }
+            });
+        }
+
+        console.log('Örnek reklamlar eklendi!');
     }
 
     generateDoors() {
@@ -105,6 +166,13 @@ class Room {
             east: null,
             west: null
         };
+        // Reklam sistemi - her duvar için reklam bilgisi
+        this.ads = {
+            north: null,
+            south: null,
+            east: null,
+            west: null
+        };
     }
 
     setWallTexture(direction, textureUrl) {
@@ -115,5 +183,21 @@ class Room {
 
     hasTexture(direction) {
         return this.wallTextures[direction] !== null;
+    }
+
+    // Reklam ekleme metodu
+    setAd(direction, adConfig) {
+        // adConfig: { type: 'image' | 'video', url: 'path/to/file', width: 2, height: 1, position: { x: 0, y: 2 } }
+        if (this.ads.hasOwnProperty(direction)) {
+            this.ads[direction] = adConfig;
+        }
+    }
+
+    hasAd(direction) {
+        return this.ads[direction] !== null;
+    }
+
+    getAd(direction) {
+        return this.ads[direction];
     }
 }

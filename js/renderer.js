@@ -401,6 +401,11 @@ class Renderer {
             this.scene.add(wall);
             this.currentRoomMeshes.push(wall);
         }
+
+        // Reklam varsa ekle (hem kapılı hem kapısız duvarlarda gösterilebilir)
+        if (room.ads && room.ads[direction]) {
+            this.createAdPanel(room.ads[direction], direction, x, z);
+        }
     }
 
     createDoorLeaf(doorWidth, doorHeight, frameMaterial) {
@@ -616,6 +621,80 @@ class Renderer {
             wall.material.map = texture;
             wall.material.needsUpdate = true;
         });
+    }
+
+    // Reklam paneli oluştur
+    createAdPanel(adConfig, direction, wallX, wallZ) {
+        if (!adConfig) return;
+
+        // Varsayılan değerler
+        const adWidth = adConfig.width || 2;
+        const adHeight = adConfig.height || 1;
+        const adY = adConfig.position?.y || 2.5; // Varsayılan yükseklik (duvar ortası)
+        const adOffsetX = adConfig.position?.x || 0; // Yatay offset
+
+        // Reklam paneli geometrisi
+        const adGeometry = new THREE.PlaneGeometry(adWidth, adHeight);
+
+        // Material oluştur (image veya video)
+        let adMaterial;
+
+        if (adConfig.type === 'video') {
+            // Video texture
+            const video = document.createElement('video');
+            video.src = adConfig.url;
+            video.loop = true;
+            video.muted = true; // Otomatik oynatma için sessize al
+            video.autoplay = true;
+            video.play().catch(err => console.warn('Video autoplay failed:', err));
+
+            const videoTexture = new THREE.VideoTexture(video);
+            videoTexture.minFilter = THREE.LinearFilter;
+            videoTexture.magFilter = THREE.LinearFilter;
+
+            adMaterial = new THREE.MeshBasicMaterial({
+                map: videoTexture,
+                side: THREE.DoubleSide
+            });
+
+            // Video elementini sakla (temizlik için)
+            adMaterial.userData.video = video;
+        } else {
+            // Image texture
+            const textureLoader = new THREE.TextureLoader();
+            const imageTexture = textureLoader.load(adConfig.url,
+                () => console.log(`Ad loaded: ${adConfig.url}`),
+                undefined,
+                (err) => console.error(`Failed to load ad: ${adConfig.url}`, err)
+            );
+
+            adMaterial = new THREE.MeshBasicMaterial({
+                map: imageTexture,
+                side: THREE.DoubleSide
+            });
+        }
+
+        const adPanel = new THREE.Mesh(adGeometry, adMaterial);
+
+        // Konumlandırma - duvara göre
+        const offset = 0.11; // Duvardan hafifçe dışarı (z-fighting önlemek için)
+
+        if (direction === 'north') {
+            adPanel.position.set(wallX + adOffsetX, adY, wallZ - offset);
+            adPanel.rotation.y = 0; // Güneye bakıyor
+        } else if (direction === 'south') {
+            adPanel.position.set(wallX + adOffsetX, adY, wallZ + offset);
+            adPanel.rotation.y = Math.PI; // Kuzeye bakıyor
+        } else if (direction === 'east') {
+            adPanel.position.set(wallX + offset, adY, wallZ + adOffsetX);
+            adPanel.rotation.y = -Math.PI / 2; // Batıya bakıyor
+        } else if (direction === 'west') {
+            adPanel.position.set(wallX - offset, adY, wallZ + adOffsetX);
+            adPanel.rotation.y = Math.PI / 2; // Doğuya bakıyor
+        }
+
+        this.scene.add(adPanel);
+        this.currentRoomMeshes.push(adPanel);
     }
 
     updateCamera() {

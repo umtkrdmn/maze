@@ -62,6 +62,7 @@ class LocalRoomProvider extends RoomProvider {
                 west: room.doors.west
             },
             wallTextures: room.wallTextures,
+            ads: room.ads, // Reklam bilgisi
             features: room.features || {} // Gelecekte: ödüller, tuzaklar, vb.
         };
     }
