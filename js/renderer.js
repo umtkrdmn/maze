@@ -13,6 +13,8 @@ class Renderer {
         this.wallHeight = 5;
         this.currentRoomMeshes = [];
         this.doorLabels = [];
+        this.videoElements = []; // Video elementlerini sakla (ses kontrolü için)
+        this.audioEnabled = false; // Ses başlangıçta kapalı
 
         this.init();
     }
@@ -75,6 +77,13 @@ class Renderer {
         // Önceki oda meshlerini temizle
         this.currentRoomMeshes.forEach(mesh => this.scene.remove(mesh));
         this.currentRoomMeshes = [];
+
+        // Önceki oda videoları durdur ve temizle
+        this.videoElements.forEach(video => {
+            video.pause();
+            video.src = '';
+        });
+        this.videoElements = [];
 
         if (!this.currentRoom) return;
 
@@ -687,8 +696,18 @@ class Renderer {
                 side: THREE.DoubleSide
             });
 
-            // Video elementini sakla (temizlik için)
+            // Video elementini sakla (temizlik ve ses kontrolü için)
             adMaterial.userData.video = video;
+            this.videoElements.push(video); // Video listesine ekle
+
+            // Eğer ses zaten açıksa (kullanıcı daha önce oyunu başlatmışsa)
+            if (this.audioEnabled) {
+                video.muted = false;
+                video.volume = 0.5;
+                console.log('Video reklam oluşturuldu - ses açık');
+            } else {
+                console.log('Video reklam oluşturuldu - ses kapalı (oyuna başladığınızda açılacak)');
+            }
         } else {
             // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
             if (adConfig.url.startsWith('canvas:')) {
@@ -817,5 +836,18 @@ class Renderer {
     update() {
         this.updateCamera();
         this.render();
+    }
+
+    // Video seslerini aç (kullanıcı interaction sonrası)
+    enableAudio() {
+        if (this.audioEnabled) return; // Zaten açıksa tekrar açma
+
+        this.videoElements.forEach(video => {
+            video.muted = false;
+            video.volume = 0.5; // %50 ses seviyesi
+        });
+
+        this.audioEnabled = true;
+        console.log(`${this.videoElements.length} video için ses açıldı`);
     }
 }

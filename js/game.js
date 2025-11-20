@@ -66,6 +66,14 @@ class Game {
             this.renderer.canvas.requestPointerLock();
         });
 
+        // Pointer lock başarılı olduğunda video sesini aç
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === this.renderer.canvas) {
+                // Kullanıcı oyunu başlattı - video seslerini aç
+                this.renderer.enableAudio();
+            }
+        });
+
         // Son oda pozisyonu (oda değişimi algılama için)
         this.lastRoomX = this.player.roomX;
         this.lastRoomY = this.player.roomY;
