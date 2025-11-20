@@ -646,6 +646,36 @@ class Renderer {
             video.loop = true;
             video.muted = true; // Otomatik oynatma için sessize al
             video.autoplay = true;
+            video.crossOrigin = 'anonymous'; // CORS için
+
+            // Video metadata yüklendiğinde aspect ratio'yu ayarla
+            video.addEventListener('loadedmetadata', () => {
+                if (adConfig.fitMode === 'contain') {
+                    const videoWidth = video.videoWidth;
+                    const videoHeight = video.videoHeight;
+                    const videoAspect = videoWidth / videoHeight;
+                    const panelAspect = adWidth / adHeight;
+
+                    let finalWidth = adWidth;
+                    let finalHeight = adHeight;
+
+                    // Aspect ratio koruyarak fit et
+                    if (videoAspect > panelAspect) {
+                        // Video daha geniş - genişliğe göre fit et
+                        finalHeight = adWidth / videoAspect;
+                    } else {
+                        // Video daha yüksek - yüksekliğe göre fit et
+                        finalWidth = adHeight * videoAspect;
+                    }
+
+                    // Geometry'yi yeniden boyutlandır
+                    adPanel.geometry.dispose();
+                    adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                    console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                }
+            });
+
             video.play().catch(err => console.warn('Video autoplay failed:', err));
 
             const videoTexture = new THREE.VideoTexture(video);

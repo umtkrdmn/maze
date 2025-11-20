@@ -38,6 +38,7 @@ class Maze {
 
         let adIndex = 0;
         let nikeAdAdded = false; // Nike reklamını bir kere eklemek için
+        let videoAdAdded = false; // Video reklamını bir kere eklemek için
 
         for (let room of this.rooms) {
             // Her yön için kontrol et
@@ -58,6 +59,18 @@ class Maze {
                         });
                         nikeAdAdded = true;
                         console.log(`Nike reklamı eklendi: Oda (${room.x}, ${room.y}), Duvar: ${direction}`);
+                    } else if (!videoAdAdded) {
+                        // İkinci kapısız duvara video reklam ekle
+                        room.setAd(direction, {
+                            type: 'video',
+                            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                            width: 9,
+                            height: 4.5,
+                            position: { x: 0, y: 2.5 },
+                            fitMode: 'contain'
+                        });
+                        videoAdAdded = true;
+                        console.log(`Video reklamı eklendi: Oda (${room.x}, ${room.y}), Duvar: ${direction}`);
                     } else {
                         // Diğer duvarlara canvas reklamlar ekle
                         const ad = adColors[adIndex % adColors.length];
