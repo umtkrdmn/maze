@@ -662,10 +662,10 @@ class Renderer {
         } else {
             // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
             if (adConfig.url.startsWith('canvas:')) {
-                // Canvas texture oluştur
+                // Canvas texture oluştur (yüksek çözünürlük için daha büyük)
                 const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 256;
+                canvas.width = 1024;  // Daha yüksek çözünürlük
+                canvas.height = 512;
                 const ctx = canvas.getContext('2d');
 
                 // Arka plan rengi
@@ -676,14 +676,14 @@ class Renderer {
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Metin (çok satırlı destekle)
+                // Metin (çok satırlı destekle, daha büyük font)
                 ctx.fillStyle = textColor;
-                ctx.font = 'Bold 48px Arial';
+                ctx.font = 'Bold 80px Arial';  // Daha büyük font
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
                 const lines = text.split('\n');
-                const lineHeight = 60;
+                const lineHeight = 100;  // Daha büyük satır yüksekliği
                 const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
 
                 lines.forEach((line, index) => {
@@ -698,7 +698,38 @@ class Renderer {
             } else {
                 // URL'den texture yükle
                 const textureLoader = new THREE.TextureLoader();
-                const imageTexture = textureLoader.load(adConfig.url);
+
+                // Aspect ratio koruma için callback kullan
+                const imageTexture = textureLoader.load(
+                    adConfig.url,
+                    (texture) => {
+                        // Texture yüklendikten sonra aspect ratio'yu kontrol et
+                        if (adConfig.fitMode === 'contain') {
+                            const imgWidth = texture.image.width;
+                            const imgHeight = texture.image.height;
+                            const imgAspect = imgWidth / imgHeight;
+                            const panelAspect = adWidth / adHeight;
+
+                            let finalWidth = adWidth;
+                            let finalHeight = adHeight;
+
+                            // Aspect ratio koruyarak fit et
+                            if (imgAspect > panelAspect) {
+                                // Resim daha geniş - genişliğe göre fit et
+                                finalHeight = adWidth / imgAspect;
+                            } else {
+                                // Resim daha yüksek - yüksekliğe göre fit et
+                                finalWidth = adHeight * imgAspect;
+                            }
+
+                            // Geometry'yi yeniden boyutlandır
+                            adPanel.geometry.dispose();
+                            adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                            console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                        }
+                    }
+                );
 
                 adMaterial = new THREE.MeshBasicMaterial({
                     map: imageTexture,

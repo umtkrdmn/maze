@@ -51,9 +51,10 @@ class Maze {
                         room.setAd(direction, {
                             type: 'image',
                             url: 'https://static.nike.com/a/images/f_auto/dpr_1.0,cs_srgb/h_1513,c_limit/f3610e3a-2415-4892-9fe5-6c7646d21a86/never-done-inspiring-ad-revolution.jpg',
-                            width: 3,
-                            height: 2,
-                            position: { x: 0, y: 2.5 }
+                            width: 9,   // Duvar genişliğinin çoğunu kapla
+                            height: 4.5, // Duvar yüksekliğinin çoğunu kapla
+                            position: { x: 0, y: 2.5 },
+                            fitMode: 'contain' // Oranları koruyarak fit et
                         });
                         nikeAdAdded = true;
                         console.log(`Nike reklamı eklendi: Oda (${room.x}, ${room.y}), Duvar: ${direction}`);
@@ -66,8 +67,8 @@ class Maze {
                             text: `${ad.label}\nOda: ${room.x},${room.y}`,
                             bgColor: ad.bg,
                             textColor: ad.text,
-                            width: 2.5,
-                            height: 1.2,
+                            width: 8,    // Daha büyük canvas reklamlar
+                            height: 4,   // Duvarın büyük kısmını kapla
                             position: { x: 0, y: 2.5 }
                         });
                     }
