@@ -79,7 +79,6 @@ class Renderer {
         if (!this.currentRoom) return;
 
         const room = this.currentRoom;
-        console.log(`Rendering room (${room.x}, ${room.y}), ads:`, room.ads);
         const halfSize = this.roomSize / 2;
 
         // Zemin (Ahşap parke)
@@ -403,9 +402,8 @@ class Renderer {
             this.currentRoomMeshes.push(wall);
         }
 
-        // Reklam varsa ekle (hem kapılı hem kapısız duvarlarda gösterilebilir)
-        console.log(`Checking ads for ${direction} wall:`, room.ads ? room.ads[direction] : 'no ads object');
-        if (room.ads && room.ads[direction]) {
+        // Reklam varsa ekle (sadece kapısız tam duvarlarda)
+        if (!hasDoor && room.ads && room.ads[direction]) {
             this.createAdPanel(room.ads[direction], direction, x, z);
         }
     }
@@ -629,8 +627,6 @@ class Renderer {
     createAdPanel(adConfig, direction, wallX, wallZ) {
         if (!adConfig) return;
 
-        console.log(`Creating ad panel for ${direction} wall at (${wallX}, ${wallZ})`, adConfig);
-
         // Varsayılan değerler
         const adWidth = adConfig.width || 2;
         const adHeight = adConfig.height || 1;
@@ -680,12 +676,19 @@ class Renderer {
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Metin
+                // Metin (çok satırlı destekle)
                 ctx.fillStyle = textColor;
                 ctx.font = 'Bold 48px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+                const lines = text.split('\n');
+                const lineHeight = 60;
+                const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
+
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
+                });
 
                 const canvasTexture = new THREE.CanvasTexture(canvas);
                 adMaterial = new THREE.MeshBasicMaterial({
@@ -695,11 +698,7 @@ class Renderer {
             } else {
                 // URL'den texture yükle
                 const textureLoader = new THREE.TextureLoader();
-                const imageTexture = textureLoader.load(adConfig.url,
-                    () => console.log(`Ad loaded: ${adConfig.url}`),
-                    undefined,
-                    (err) => console.error(`Failed to load ad: ${adConfig.url}`, err)
-                );
+                const imageTexture = textureLoader.load(adConfig.url);
 
                 adMaterial = new THREE.MeshBasicMaterial({
                     map: imageTexture,
@@ -730,8 +729,6 @@ class Renderer {
 
         this.scene.add(adPanel);
         this.currentRoomMeshes.push(adPanel);
-
-        console.log(`Ad panel added to scene at position:`, adPanel.position, `rotation:`, adPanel.rotation);
     }
 
     updateCamera() {

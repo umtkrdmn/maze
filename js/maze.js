@@ -24,102 +24,44 @@ class Maze {
     }
 
     addSampleAds() {
-        // Başlangıç odasına (0,0) reklam ekle
-        const startRoom = this.getRoom(0, 0);
-        if (startRoom) {
-            // Kuzey duvarına resim reklam (Canvas tabanlı - internet gerektirmez)
-            startRoom.setAd('north', {
-                type: 'image',
-                url: 'canvas:welcome',
-                text: 'HOŞGELDİNİZ!',
-                bgColor: '#FF6B6B',
-                textColor: '#FFFFFF',
-                width: 2,
-                height: 1,
-                position: { x: 0, y: 2.5 }
-            });
+        // Her odayı dolaş ve kapısız duvarlara reklam ekle
+        const adColors = [
+            { bg: '#FF6B6B', text: '#FFFFFF', label: 'REKLAM 1' },
+            { bg: '#4ECDC4', text: '#FFFFFF', label: 'REKLAM 2' },
+            { bg: '#FFE66D', text: '#000000', label: 'ÖZEL TEKLİF' },
+            { bg: '#95E1D3', text: '#000000', label: 'İNDİRİM' },
+            { bg: '#F38181', text: '#FFFFFF', label: 'YENİ ÜRÜN' },
+            { bg: '#A8E6CF', text: '#000000', label: 'KAMPANYA' },
+            { bg: '#FFD3B6', text: '#000000', label: 'FIRSAT' },
+            { bg: '#C7CEEA', text: '#000000', label: 'SÜPER FİYAT' }
+        ];
 
-            // Doğu duvarına farklı reklam
-            startRoom.setAd('east', {
-                type: 'image',
-                url: 'canvas:ad1',
-                text: 'REKLAM 1',
-                bgColor: '#4ECDC4',
-                textColor: '#FFFFFF',
-                width: 2.5,
-                height: 1.2,
-                position: { x: 0, y: 2.5 }
-            });
+        let adIndex = 0;
+
+        for (let room of this.rooms) {
+            // Her yön için kontrol et
+            const directions = ['north', 'south', 'east', 'west'];
+
+            for (let direction of directions) {
+                // Eğer bu yönde kapı yoksa reklam ekle
+                if (!room.doors[direction]) {
+                    const ad = adColors[adIndex % adColors.length];
+                    room.setAd(direction, {
+                        type: 'image',
+                        url: `canvas:ad-${room.x}-${room.y}-${direction}`,
+                        text: `${ad.label}\nOda: ${room.x},${room.y}`,
+                        bgColor: ad.bg,
+                        textColor: ad.text,
+                        width: 2.5,
+                        height: 1.2,
+                        position: { x: 0, y: 2.5 }
+                    });
+                    adIndex++;
+                }
+            }
         }
 
-        // (1,0) odasına reklam ekle
-        const room1 = this.getRoom(1, 0);
-        if (room1) {
-            room1.setAd('west', {
-                type: 'image',
-                url: 'canvas:newroom',
-                text: 'YENİ ODA!',
-                bgColor: '#FFE66D',
-                textColor: '#000000',
-                width: 2,
-                height: 1,
-                position: { x: 0, y: 2.5 }
-            });
-
-            room1.setAd('north', {
-                type: 'image',
-                url: 'canvas:discount',
-                text: 'ÖZEL İNDİRİM!',
-                bgColor: '#95E1D3',
-                textColor: '#000000',
-                width: 3,
-                height: 1.5,
-                position: { x: 0, y: 2.5 }
-            });
-        }
-
-        // (0,1) odasına reklam ekle
-        const room2 = this.getRoom(0, 1);
-        if (room2) {
-            room2.setAd('south', {
-                type: 'image',
-                url: 'canvas:welcome2',
-                text: 'HOŞGELDİNİZ 2',
-                bgColor: '#F38181',
-                textColor: '#FFFFFF',
-                width: 2,
-                height: 1,
-                position: { x: 0, y: 2.5 }
-            });
-        }
-
-        // (1,1) odasına reklam ekle
-        const room3 = this.getRoom(1, 1);
-        if (room3) {
-            room3.setAd('north', {
-                type: 'image',
-                url: 'canvas:test',
-                text: 'TEST ODA 1,1',
-                bgColor: '#A8E6CF',
-                textColor: '#000000',
-                width: 2.5,
-                height: 1.2,
-                position: { x: 0, y: 2.5 }
-            });
-
-            room3.setAd('west', {
-                type: 'image',
-                url: 'canvas:here',
-                text: 'BURASI 1,1',
-                bgColor: '#FFD3B6',
-                textColor: '#000000',
-                width: 2,
-                height: 1,
-                position: { x: 0, y: 2.5 }
-            });
-        }
-
-        console.log('Örnek reklamlar eklendi!');
+        console.log('Örnek reklamlar eklendi (sadece kapısız duvarlara)!');
     }
 
     generateDoors() {
