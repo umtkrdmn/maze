@@ -89,6 +89,11 @@ class Game {
 
     async onRoomChange() {
         // Yeni odaya geçildiğinde
+        // Provider'a yeni pozisyonu bildir (LocalRoomProvider için gerekli)
+        if (this.roomProvider.updatePosition) {
+            this.roomProvider.updatePosition(this.player.roomX, this.player.roomY);
+        }
+
         // Provider'dan yeni oda bilgisini al
         this.currentRoom = await this.roomProvider.getCurrentRoom();
 

@@ -37,6 +37,13 @@ class LocalRoomProvider extends RoomProvider {
         };
     }
 
+    // Player pozisyonunu güncelle (oda geçişlerinde çağrılır)
+    updatePosition(x, y) {
+        this.currentX = x;
+        this.currentY = y;
+        this.visitedRooms.add(`${x},${y}`);
+    }
+
     async getCurrentRoom() {
         const room = this.maze.getRoom(this.currentX, this.currentY);
         if (!room) {
@@ -175,6 +182,12 @@ class ServerRoomProvider extends RoomProvider {
             console.error('Failed to start game:', error);
             throw error;
         }
+    }
+
+    // Server provider için pozisyon güncellemesi gerekmez (server takip ediyor)
+    // Ama interface uyumluluğu için boş method
+    updatePosition(x, y) {
+        // Server-side tracking, no action needed
     }
 
     async getCurrentRoom() {
