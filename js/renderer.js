@@ -20,7 +20,7 @@ class Renderer {
     init() {
         // Sahne oluştur
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB); // Açık mavi gökyüzü
+        this.scene.background = new THREE.Color(0x1a1a1a); // Koyu gri/siyah
 
         // Kamera
         this.camera = new THREE.PerspectiveCamera(
@@ -39,12 +39,12 @@ class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
 
-        // Işıklandırma
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Işıklandırma (daha yumuşak)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         this.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 10, 5);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 5, 0); // Yukarıdan aşağıya
         directionalLight.castShadow = true;
         this.scene.add(directionalLight);
 
@@ -68,9 +68,9 @@ class Renderer {
         // Zemin (Ahşap parke)
         const floorGeometry = new THREE.PlaneGeometry(this.roomSize, this.roomSize);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x8B6F47, // Kahverengi ahşap
-            roughness: 0.7,
-            metalness: 0.1
+            color: 0x6B4E3D, // Koyu kahverengi ahşap
+            roughness: 0.8,
+            metalness: 0.05
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
@@ -149,9 +149,9 @@ class Renderer {
 
     createWall(direction, hasDoor, x, z, room) {
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x7A8B99, // Gri-mavi duvar
-            roughness: 0.8,
-            metalness: 0.05
+            color: 0x5A6A75, // Koyu gri-mavi duvar
+            roughness: 0.9,
+            metalness: 0.02
         });
 
         if (hasDoor) {
@@ -233,13 +233,9 @@ class Renderer {
                 frameTop.position.set(x, doorHeight, z);
                 threshold.position.set(x, 0.025, z);
 
-                // Kapı kanadı (sol menteşe, hafif açık)
-                doorLeaf.position.set(x - doorWidth / 2, doorHeight / 2, z + 0.2);
-                if (direction === 'north') {
-                    doorLeaf.rotation.y = -0.35; // 20 derece açık (odaya doğru)
-                } else {
-                    doorLeaf.rotation.y = 0.35;
-                }
+                // Kapı kanadı (kapalı durumda)
+                doorLeaf.position.set(x, doorHeight / 2, z);
+                doorLeaf.rotation.y = 0; // Kapalı
             } else {
                 // Duvarlar
                 leftWall.position.set(x, this.wallHeight / 2, z - this.roomSize / 4 - sideWallWidth / 4);
@@ -259,14 +255,9 @@ class Renderer {
                 threshold.position.set(x, 0.025, z);
                 threshold.rotation.y = Math.PI / 2;
 
-                // Kapı kanadı (sol menteşe, hafif açık)
-                doorLeaf.position.set(x + 0.2, doorHeight / 2, z - doorWidth / 2);
-                doorLeaf.rotation.y = Math.PI / 2;
-                if (direction === 'east') {
-                    doorLeaf.rotation.y += -0.35; // Açık
-                } else {
-                    doorLeaf.rotation.y += 0.35; // Açık
-                }
+                // Kapı kanadı (kapalı durumda)
+                doorLeaf.position.set(x, doorHeight / 2, z);
+                doorLeaf.rotation.y = Math.PI / 2; // Kapalı
             }
 
             this.scene.add(leftWall);
@@ -312,62 +303,55 @@ class Renderer {
         // Kapı kanadı grubu
         const doorGroup = new THREE.Group();
 
-        // Kapı ana gövdesi
-        const doorBody = new THREE.Mesh(
-            new THREE.BoxGeometry(doorWidth - 0.1, doorHeight, 0.05),
-            new THREE.MeshStandardMaterial({
-                color: 0xA0826D, // Açık kahverengi ahşap
-                roughness: 0.7,
-                metalness: 0.1
-            })
-        );
-        doorGroup.add(doorBody);
-
-        // Kapı panel çerçeveleri (2 panel)
-        const panelMaterial = new THREE.MeshStandardMaterial({
-            color: 0x8B6F47,
-            roughness: 0.8,
+        // Kapı ana gövdesi (tek renk, basit)
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B6F47, // Orta ton kahverengi ahşap
+            roughness: 0.85,
             metalness: 0.05
         });
 
-        // Üst panel çerçevesi
+        const doorBody = new THREE.Mesh(
+            new THREE.BoxGeometry(doorWidth - 0.1, doorHeight, 0.08),
+            doorMaterial
+        );
+        doorGroup.add(doorBody);
+
+        // Çok hafif panel çerçeveleri (çok ince, aynı renkte)
+        const panelMaterial = new THREE.MeshStandardMaterial({
+            color: 0x6B4E3D, // Biraz daha koyu
+            roughness: 0.9,
+            metalness: 0.02
+        });
+
+        // Üst panel çerçevesi (daha ince)
         const topPanelFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(doorWidth - 0.3, doorHeight / 2 - 0.3, 0.03),
+            new THREE.BoxGeometry(doorWidth - 0.4, doorHeight / 2 - 0.5, 0.02),
             panelMaterial
         );
-        topPanelFrame.position.set(0, doorHeight / 4, 0.04);
+        topPanelFrame.position.set(0, doorHeight / 4, 0.05);
         doorGroup.add(topPanelFrame);
 
-        // Alt panel çerçevesi
+        // Alt panel çerçevesi (daha ince)
         const bottomPanelFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(doorWidth - 0.3, doorHeight / 2 - 0.3, 0.03),
+            new THREE.BoxGeometry(doorWidth - 0.4, doorHeight / 2 - 0.5, 0.02),
             panelMaterial
         );
-        bottomPanelFrame.position.set(0, -doorHeight / 4, 0.04);
+        bottomPanelFrame.position.set(0, -doorHeight / 4, 0.05);
         doorGroup.add(bottomPanelFrame);
 
-        // Kapı kolu
+        // Kapı kolu (küçük, basit)
         const handleMaterial = new THREE.MeshStandardMaterial({
-            color: 0xC0C0C0, // Gümüş
-            roughness: 0.3,
-            metalness: 0.8
+            color: 0x8B7355, // Koyu bronz/bakır
+            roughness: 0.5,
+            metalness: 0.6
         });
 
         const doorHandle = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.03, 0.03, 0.15, 16),
-            handleMaterial
-        );
-        doorHandle.rotation.z = Math.PI / 2;
-        doorHandle.position.set(doorWidth / 2 - 0.2, 0, 0.06);
-        doorGroup.add(doorHandle);
-
-        // Kol ucu (yuvarlak)
-        const handleKnob = new THREE.Mesh(
             new THREE.SphereGeometry(0.04, 16, 16),
             handleMaterial
         );
-        handleKnob.position.set(doorWidth / 2 - 0.125, 0, 0.06);
-        doorGroup.add(handleKnob);
+        doorHandle.position.set(doorWidth / 2 - 0.15, 0, 0.06);
+        doorGroup.add(doorHandle);
 
         return doorGroup;
     }
