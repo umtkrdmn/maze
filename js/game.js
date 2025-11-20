@@ -2,15 +2,20 @@
 
 class Game {
     constructor() {
-        // 4x4 labirent oluştur
-        this.maze = new Maze(4, 4);
+        // Room Provider kullan (Local veya Server)
+        // Şu an Local provider kullanıyoruz, backend hazır olunca ServerRoomProvider'a geçilecek
+        this.roomProvider = new LocalRoomProvider(4, 4);
 
-        // Oyuncu (0,0) konumunda başlasın
+        // ÖNEMLI: Artık maze bilgisi doğrudan erişilebilir değil!
+        // Sadece provider üzerinden current room bilgisi alınabilir
+        this.currentRoom = null;
+
+        // Oyuncu (sadece 3D pozisyon tutar, oda bilgisi provider'da)
         this.player = new Player(0, 0);
 
         // Renderer ve Minimap
-        this.renderer = new Renderer('game-canvas', this.maze, this.player);
-        this.minimap = new Minimap('minimap', this.maze, this.player);
+        this.renderer = null; // Async init sonrası
+        this.minimap = null;   // Async init sonrası
 
         // Kontroller
         this.keys = {};
@@ -18,9 +23,34 @@ class Game {
         this.mouseY = 0;
         this.mouseSensitivity = 0.2;
 
-        this.initControls();
-        this.updateDebugInfo();
-        this.gameLoop();
+        this.initGame();
+    }
+
+    async initGame() {
+        // Oyunu başlat (async çünkü provider ile iletişim async olabilir)
+        try {
+            // Başlangıç pozisyonu al
+            const startPos = await this.roomProvider.getStartPosition();
+            this.player.roomX = startPos.x;
+            this.player.roomY = startPos.y;
+
+            // İlk oda bilgisini al
+            this.currentRoom = await this.roomProvider.getCurrentRoom();
+
+            // Renderer ve Minimap'i başlat
+            this.renderer = new Renderer('game-canvas', this.currentRoom, this.player);
+            this.minimap = new Minimap('minimap', this.roomProvider, this.player);
+
+            this.initControls();
+            this.updateDebugInfo();
+            this.gameLoop();
+
+            console.log('3D Labirent Oyunu başlatıldı!');
+            console.log('Kontroller: W/↑ İleri, S/↓ Geri, A Sola, D Sağa');
+            console.log('Mouse ile etrafa bakabilirsiniz (Canvas\'a tıklayın)');
+        } catch (error) {
+            console.error('Oyun başlatılamadı:', error);
+        }
     }
 
     initControls() {
@@ -57,16 +87,19 @@ class Game {
         }
     }
 
-    onRoomChange() {
+    async onRoomChange() {
         // Yeni odaya geçildiğinde
-        this.renderer.createCurrentRoom();
+        // Provider'dan yeni oda bilgisini al
+        this.currentRoom = await this.roomProvider.getCurrentRoom();
+
+        // Renderer'ı güncelle (yeni oda render edilsin)
+        this.renderer.updateRoom(this.currentRoom);
+
         this.updateDebugInfo();
     }
 
     updateDebugInfo() {
         // Debug bilgilerini güncelle
-        const room = this.player.getCurrentRoom(this.maze);
-
         document.getElementById('current-room').textContent =
             `Oda: (${this.player.roomX}, ${this.player.roomY})`;
 
@@ -75,10 +108,10 @@ class Game {
 
         // Mevcut kapılar
         const doors = [];
-        if (room.doors.north) doors.push('Kuzey');
-        if (room.doors.south) doors.push('Güney');
-        if (room.doors.east) doors.push('Doğu');
-        if (room.doors.west) doors.push('Batı');
+        if (this.currentRoom.doors.north) doors.push('Kuzey');
+        if (this.currentRoom.doors.south) doors.push('Güney');
+        if (this.currentRoom.doors.east) doors.push('Doğu');
+        if (this.currentRoom.doors.west) doors.push('Batı');
 
         document.getElementById('available-doors').textContent =
             `Kapılar: ${doors.join(', ') || 'Yok'}`;
@@ -89,7 +122,8 @@ class Game {
         requestAnimationFrame(() => this.gameLoop());
 
         // Oyuncu hareketini güncelle
-        this.player.update(this.keys, this.maze);
+        // canMoveTo için currentRoom geçiyoruz
+        this.player.updateWithRoom(this.keys, this.currentRoom);
 
         // Oda değişimi kontrolü
         if (this.player.roomX !== this.lastRoomX || this.player.roomY !== this.lastRoomY) {
@@ -112,6 +146,4 @@ class Game {
 // Sayfa yüklendiğinde oyunu başlat
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Game();
-    console.log('3D Labirent Oyunu başlatıldı!');
-    console.log('Kontroller: W/↑ İleri, S/↓ Geri, A/← Sola Dön, D/→ Sağa Dön');
 });

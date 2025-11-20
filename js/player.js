@@ -27,7 +27,8 @@ class Player {
         this.doorThreshold = 4.5; // Kapıya ne kadar yaklaşınca geçiş yapılır
     }
 
-    update(keys, maze) {
+    // Yeni method: Room provider pattern ile çalışır
+    updateWithRoom(keys, currentRoom) {
         // Hareket vektörünü hesapla
         let moveX = 0;
         let moveZ = 0;
@@ -54,10 +55,10 @@ class Player {
             const newZ = this.position.z + rotatedMove.z;
 
             // Collision kontrolü
-            if (this.canMoveTo(newX, this.position.z, maze)) {
+            if (this.canMoveToInRoom(newX, this.position.z, currentRoom)) {
                 this.position.x = newX;
             }
-            if (this.canMoveTo(this.position.x, newZ, maze)) {
+            if (this.canMoveToInRoom(this.position.x, newZ, currentRoom)) {
                 this.position.z = newZ;
             }
         }
@@ -71,7 +72,13 @@ class Player {
         }
 
         // Kapıya yaklaşma kontrolü
-        this.checkDoorTransition(maze);
+        this.checkDoorTransitionInRoom(currentRoom);
+    }
+
+    // Eski method (backward compatibility)
+    update(keys, maze) {
+        const room = this.getCurrentRoom(maze);
+        this.updateWithRoom(keys, room);
     }
 
     rotateVector(x, z, rotation) {
@@ -81,14 +88,14 @@ class Player {
         };
     }
 
-    canMoveTo(newX, newZ, maze) {
+    // Yeni method: currentRoom ile çalışır
+    canMoveToInRoom(newX, newZ, currentRoom) {
         const halfSize = this.roomSize / 2;
-        const room = this.getCurrentRoom(maze);
         const doorWidth = 2; // Kapı genişliği
 
         // Kuzey duvarı kontrolü
         if (newZ < -(halfSize - this.radius)) {
-            if (!room.doors.north) {
+            if (!currentRoom.doors.north) {
                 return false; // Kapı yok, geçemezsin
             } else {
                 // Kapı var ama kapı alanında mısın?
@@ -100,7 +107,7 @@ class Player {
 
         // Güney duvarı kontrolü
         if (newZ > (halfSize - this.radius)) {
-            if (!room.doors.south) {
+            if (!currentRoom.doors.south) {
                 return false;
             } else {
                 if (Math.abs(newX) > doorWidth / 2) {
@@ -111,7 +118,7 @@ class Player {
 
         // Doğu duvarı kontrolü
         if (newX > (halfSize - this.radius)) {
-            if (!room.doors.east) {
+            if (!currentRoom.doors.east) {
                 return false;
             } else {
                 if (Math.abs(newZ) > doorWidth / 2) {
@@ -122,7 +129,7 @@ class Player {
 
         // Batı duvarı kontrolü
         if (newX < -(halfSize - this.radius)) {
-            if (!room.doors.west) {
+            if (!currentRoom.doors.west) {
                 return false;
             } else {
                 if (Math.abs(newZ) > doorWidth / 2) {
@@ -134,15 +141,21 @@ class Player {
         return true;
     }
 
-    checkDoorTransition(maze) {
-        const halfSize = this.roomSize / 2;
+    // Eski method (backward compatibility)
+    canMoveTo(newX, newZ, maze) {
         const room = this.getCurrentRoom(maze);
+        return this.canMoveToInRoom(newX, newZ, room);
+    }
+
+    // Yeni method: currentRoom ile çalışır, mazeSize bilgisi gerektirmez
+    checkDoorTransitionInRoom(currentRoom) {
+        const halfSize = this.roomSize / 2;
         const doorWidth = 2;
         let roomChanged = false;
 
         // Kuzey kapısından geçiş
-        if (room.doors.north && this.position.z < -(halfSize - 0.5)) {
-            if (Math.abs(this.position.x) <= doorWidth / 2 && this.roomY > 0) {
+        if (currentRoom.doors.north && this.position.z < -(halfSize - 0.5)) {
+            if (Math.abs(this.position.x) <= doorWidth / 2) {
                 this.roomY--;
                 this.position.z = halfSize - 1; // Yeni odanın güneyinden başla
                 roomChanged = true;
@@ -150,8 +163,8 @@ class Player {
         }
 
         // Güney kapısından geçiş
-        if (room.doors.south && this.position.z > (halfSize - 0.5)) {
-            if (Math.abs(this.position.x) <= doorWidth / 2 && this.roomY < maze.height - 1) {
+        if (currentRoom.doors.south && this.position.z > (halfSize - 0.5)) {
+            if (Math.abs(this.position.x) <= doorWidth / 2) {
                 this.roomY++;
                 this.position.z = -(halfSize - 1); // Yeni odanın kuzeyinden başla
                 roomChanged = true;
@@ -159,8 +172,8 @@ class Player {
         }
 
         // Doğu kapısından geçiş
-        if (room.doors.east && this.position.x > (halfSize - 0.5)) {
-            if (Math.abs(this.position.z) <= doorWidth / 2 && this.roomX < maze.width - 1) {
+        if (currentRoom.doors.east && this.position.x > (halfSize - 0.5)) {
+            if (Math.abs(this.position.z) <= doorWidth / 2) {
                 this.roomX++;
                 this.position.x = -(halfSize - 1); // Yeni odanın batısından başla
                 roomChanged = true;
@@ -168,8 +181,8 @@ class Player {
         }
 
         // Batı kapısından geçiş
-        if (room.doors.west && this.position.x < -(halfSize - 0.5)) {
-            if (Math.abs(this.position.z) <= doorWidth / 2 && this.roomX > 0) {
+        if (currentRoom.doors.west && this.position.x < -(halfSize - 0.5)) {
+            if (Math.abs(this.position.z) <= doorWidth / 2) {
                 this.roomX--;
                 this.position.x = halfSize - 1; // Yeni odanın doğusundan başla
                 roomChanged = true;
@@ -177,6 +190,12 @@ class Player {
         }
 
         return roomChanged;
+    }
+
+    // Eski method (backward compatibility)
+    checkDoorTransition(maze) {
+        const room = this.getCurrentRoom(maze);
+        return this.checkDoorTransitionInRoom(room);
     }
 
     rotate(deltaX, deltaY) {

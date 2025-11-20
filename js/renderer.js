@@ -1,9 +1,9 @@
 // 3D Renderer - Three.js ile Labirent Görselleştirme
 
 class Renderer {
-    constructor(canvasId, maze, player) {
+    constructor(canvasId, currentRoom, player) {
         this.canvas = document.getElementById(canvasId);
-        this.maze = maze;
+        this.currentRoom = currentRoom; // Artık maze yok, sadece currentRoom var
         this.player = player;
 
         this.scene = null;
@@ -62,17 +62,23 @@ class Renderer {
         window.addEventListener('resize', () => this.onWindowResize());
 
         // İlk odayı oluştur
-        this.createCurrentRoom();
+        this.renderRoom();
     }
 
-    createCurrentRoom() {
+    // Yeni oda render etmek için (oda değiştiğinde çağrılır)
+    updateRoom(newRoom) {
+        this.currentRoom = newRoom;
+        this.renderRoom();
+    }
+
+    renderRoom() {
         // Önceki oda meshlerini temizle
         this.currentRoomMeshes.forEach(mesh => this.scene.remove(mesh));
         this.currentRoomMeshes = [];
 
-        const room = this.player.getCurrentRoom(this.maze);
-        if (!room) return;
+        if (!this.currentRoom) return;
 
+        const room = this.currentRoom;
         const halfSize = this.roomSize / 2;
 
         // Zemin (Ahşap parke)

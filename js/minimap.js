@@ -1,13 +1,18 @@
-// Minimap - Labirent Haritası ve Oyuncu Konumu
+// Minimap - Labirent Haritası ve Oyuncu Konumu (Fog of War)
 
 class Minimap {
-    constructor(canvasId, maze, player) {
+    constructor(canvasId, roomProvider, player) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        this.maze = maze;
+        this.roomProvider = roomProvider; // Artık maze yok, provider var
         this.player = player;
         this.cellSize = 40;
         this.wallThickness = 4;
+
+        // Maze boyutunu al (eğer varsa)
+        const mazeSize = this.roomProvider.getMazeSize();
+        this.mazeWidth = mazeSize.width || 4; // Default 4x4
+        this.mazeHeight = mazeSize.height || 4;
     }
 
     draw() {
@@ -19,11 +24,12 @@ class Minimap {
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, width, height);
 
-        // Odalari çiz
-        const offsetX = (width - this.maze.width * this.cellSize) / 2;
-        const offsetY = (height - this.maze.height * this.cellSize) / 2;
+        // SADECE ziyaret edilen odaları çiz (FOG OF WAR)
+        const visitedRooms = this.roomProvider.getVisitedRooms();
+        const offsetX = (width - this.mazeWidth * this.cellSize) / 2;
+        const offsetY = (height - this.mazeHeight * this.cellSize) / 2;
 
-        for (let room of this.maze.rooms) {
+        for (let room of visitedRooms) {
             this.drawRoom(room, offsetX, offsetY);
         }
 
