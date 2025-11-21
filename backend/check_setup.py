@@ -60,8 +60,8 @@ def main():
         print()
         print("Next steps:")
         print("1. Run: python main.py")
-        print("2. Backend will start on http://localhost:7000")
-        print("3. API docs available at http://localhost:7000/docs")
+        print("2. Backend will start on http://localhost:7100")
+        print("3. API docs available at http://localhost:7100/docs")
         return 0
     else:
         print("✗ Some dependencies are missing.")

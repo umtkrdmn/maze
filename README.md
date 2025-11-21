@@ -66,9 +66,9 @@ python main.py
 ```
 
 Backend şu adreslerde çalışacak / Backend will run at:
-- API: http://localhost:7000
-- API Docs (Swagger): http://localhost:7000/docs
-- WebSocket: ws://localhost:7000/ws
+- API: http://localhost:7100
+- API Docs (Swagger): http://localhost:7100/docs
+- WebSocket: ws://localhost:7100/ws
 
 #### 3. Frontend'i Çalıştırma / Running Frontend
 
@@ -217,7 +217,7 @@ maze/
 ## 🔧 API Endpoints
 
 Tüm API endpoint'lerini görmek için backend çalışırken şu adresi ziyaret edin:
-**http://localhost:7000/docs**
+**http://localhost:7100/docs**
 
 ### Ana Endpoint'ler / Main Endpoints
 
@@ -311,7 +311,7 @@ python --version  # Should be 3.11 or higher
 ### Frontend backend'e bağlanamıyor / Frontend can't connect to backend
 
 1. Backend'in çalıştığından emin olun / Make sure backend is running
-   - http://localhost:7000/docs açılmalı / should open
+   - http://localhost:7100/docs açılmalı / should open
 2. CORS hatası varsa / If CORS error:
    - `backend/main.py` içinde CORS ayarlarını kontrol edin / check CORS settings in `backend/main.py`
 3. Browser console'da hata mesajlarını kontrol edin (F12) / Check error messages in browser console

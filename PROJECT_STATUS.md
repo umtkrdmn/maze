@@ -318,7 +318,7 @@ Frontend:
 
 **Geliştirme / Development**:
 - DEVELOPMENT.md dosyasına başvurun / Refer to DEVELOPMENT.md
-- API Docs: http://localhost:7000/docs
+- API Docs: http://localhost:7100/docs
 
 ---
 

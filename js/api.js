@@ -1,7 +1,7 @@
 // API Client for Backend Communication
 
 class ApiClient {
-    constructor(baseUrl = 'http://localhost:7000') {
+    constructor(baseUrl = 'http://localhost:7100') {
         this.baseUrl = baseUrl;
         this.token = localStorage.getItem('maze_token');
     }
