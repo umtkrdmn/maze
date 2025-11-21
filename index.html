@@ -2,12 +2,40 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D Labirent Oyunu</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ui.css">
 </head>
 <body>
-    <div id="game-container">
+    <!-- Login/Register Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="auth-title">Giriş Yap</h2>
+            <form id="auth-form">
+                <div class="form-group" id="username-group" style="display: none;">
+                    <label for="username">Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" placeholder="Kullanıcı adınız">
+                </div>
+                <div class="form-group">
+                    <label for="email">E-posta</label>
+                    <input type="email" id="email" name="email" required placeholder="E-posta adresiniz">
+                </div>
+                <div class="form-group">
+                    <label for="password">Şifre</label>
+                    <input type="password" id="password" name="password" required placeholder="Şifreniz">
+                </div>
+                <button type="submit" class="btn btn-primary" id="auth-submit">Giriş Yap</button>
+            </form>
+            <p class="auth-switch">
+                <span id="auth-switch-text">Hesabınız yok mu?</span>
+                <a href="#" id="auth-switch-link">Kayıt Ol</a>
+            </p>
+            <button class="btn btn-secondary" id="play-offline">Çevrimdışı Oyna</button>
+        </div>
+    </div>
+
+    <div id="game-container" style="display: none;">
         <!-- 3D Canvas -->
         <canvas id="game-canvas"></canvas>
 
@@ -16,6 +44,7 @@
             <div id="current-room">Oda: (0, 0)</div>
             <div id="player-direction">Yön: Kuzey</div>
             <div id="available-doors">Kapılar: -</div>
+            <div id="player-balance" style="display: none;">Bakiye: $0.00</div>
         </div>
 
         <!-- Minimap -->
@@ -23,16 +52,119 @@
             <canvas id="minimap"></canvas>
         </div>
 
+        <!-- Chat Panel -->
+        <div id="chat-panel" style="display: none;">
+            <div id="chat-messages"></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Mesaj yaz..." maxlength="500">
+                <button id="chat-send">Gönder</button>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="notifications"></div>
+
+        <!-- Reward Popup -->
+        <div id="reward-popup" style="display: none;">
+            <div class="reward-content">
+                <div class="reward-icon">💰</div>
+                <div class="reward-amount">$0</div>
+                <div class="reward-message"></div>
+            </div>
+        </div>
+
+        <!-- Trap Effect Overlay -->
+        <div id="trap-overlay" style="display: none;"></div>
+
+        <!-- Portal Indicator -->
+        <div id="portal-indicator" style="display: none;">
+            ✨ Portal mevcut! [P] tuşuna basın
+        </div>
+
         <!-- Kontroller Bilgisi -->
         <div id="controls-info">
             <p><strong>Kontroller:</strong></p>
-            <p>W/↑: İleri Yürü</p>
-            <p>S/↓: Geri Yürü</p>
-            <p>A: Sola Yürü</p>
-            <p>D: Sağa Yürü</p>
-            <p>←: Sola Dön</p>
-            <p>→: Sağa Dön</p>
-            <p>Mouse: Etrafı Bak</p>
+            <p>W/↑: İleri</p>
+            <p>S/↓: Geri</p>
+            <p>A: Sol</p>
+            <p>D: Sağ</p>
+            <p>P: Portal</p>
+            <p>T: Chat</p>
+            <p>M: Ses</p>
+        </div>
+
+        <!-- Game Menu -->
+        <div id="game-menu" style="display: none;">
+            <div class="menu-content">
+                <h2>Menü</h2>
+                <button class="menu-btn" id="menu-character">Karakter Düzenle</button>
+                <button class="menu-btn" id="menu-rooms">Odalarım</button>
+                <button class="menu-btn" id="menu-shop">Oda Satın Al</button>
+                <button class="menu-btn" id="menu-settings">Ayarlar</button>
+                <button class="menu-btn" id="menu-close">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Editor Modal -->
+    <div id="character-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <h2>Karakter Düzenle</h2>
+            <div id="character-editor">
+                <div class="editor-preview">
+                    <canvas id="character-preview"></canvas>
+                </div>
+                <div class="editor-options">
+                    <!-- Options will be populated by JS -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="char-randomize">Rastgele</button>
+                <button class="btn btn-primary" id="char-save">Kaydet</button>
+                <button class="btn btn-secondary" id="char-close">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Designer Modal -->
+    <div id="room-designer-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <h2>Oda Tasarımı</h2>
+            <div id="room-designer">
+                <div class="designer-preview">
+                    <canvas id="room-preview"></canvas>
+                </div>
+                <div class="designer-options">
+                    <h3>Şablonlar</h3>
+                    <div id="template-grid" class="option-grid">
+                        <!-- Templates will be populated -->
+                    </div>
+                    <h3>Renkler</h3>
+                    <div class="color-options">
+                        <div class="color-option">
+                            <label>Duvar</label>
+                            <input type="color" id="wall-color" value="#808080">
+                        </div>
+                        <div class="color-option">
+                            <label>Zemin</label>
+                            <input type="color" id="floor-color" value="#6B4E3D">
+                        </div>
+                        <div class="color-option">
+                            <label>Tavan</label>
+                            <input type="color" id="ceiling-color" value="#EEEEEE">
+                        </div>
+                    </div>
+                    <h3>Reklamlar</h3>
+                    <div id="ad-options">
+                        <!-- Ad options will be populated -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="room-random">Şanslı Hissediyorum</button>
+                <button class="btn btn-primary" id="room-save">Kaydet</button>
+                <button class="btn btn-secondary" id="room-close">Kapat</button>
+            </div>
         </div>
     </div>
 
@@ -40,11 +172,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <!-- Game Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/websocket-client.js"></script>
+    <script src="js/sound-manager.js"></script>
     <script src="js/maze.js"></script>
     <script src="js/room-provider.js"></script>
     <script src="js/player.js"></script>
     <script src="js/minimap.js"></script>
     <script src="js/renderer.js"></script>
+    <script src="js/mobile-controls.js"></script>
+    <script src="js/ui-manager.js"></script>
     <script src="js/game.js"></script>
 </body>
 </html>

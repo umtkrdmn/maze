@@ -140,40 +140,51 @@ class LocalRoomProvider extends RoomProvider {
 
 // ============================================
 // SERVER PROVIDER (Production için)
-// Tüm labirent server-side'da
+// Tüm labirent server-side'da, güvenli mimari
 // ============================================
 class ServerRoomProvider extends RoomProvider {
-    constructor(apiBaseUrl = '/api/maze') {
+    constructor() {
         super();
-        this.apiBaseUrl = apiBaseUrl;
         this.sessionToken = null;
         this.currentRoom = null;
         this.visitedRooms = [];
+        this.mazeSize = { width: null, height: null };
+
+        // Trap effects
+        this.trapEffects = {
+            frozen: false,
+            frozenUntil: null,
+            blind: false,
+            blindUntil: null,
+            slow: false,
+            slowUntil: null,
+            speedMultiplier: 1.0,
+            reverseControls: false,
+            reverseUntil: null
+        };
     }
 
     async getStartPosition() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/start`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            // API client'ı kullan
+            const data = await api.startGame();
 
             // Session token sakla
-            this.sessionToken = data.sessionToken;
+            this.sessionToken = data.session_token;
             this.currentRoom = data.room;
+            this.mazeSize = data.maze_size;
+
+            // İlk oda ziyaret edildi
             this.visitedRooms.push({
                 x: data.room.x,
                 y: data.room.y,
                 doors: data.room.doors
             });
+
+            // WebSocket'e bağlan
+            if (api.token) {
+                gameWS.connect(api.token);
+            }
 
             return {
                 x: data.room.x,
@@ -185,10 +196,19 @@ class ServerRoomProvider extends RoomProvider {
         }
     }
 
-    // Server provider için pozisyon güncellemesi gerekmez (server takip ediyor)
-    // Ama interface uyumluluğu için boş method
+    // Server provider için pozisyon güncellemesi
     updatePosition(x, y) {
-        // Server-side tracking, no action needed
+        // WebSocket ile diğer oyunculara bildir
+        if (gameWS.connected) {
+            gameWS.changeRoom(x, y);
+        }
+    }
+
+    // Player 3D pozisyonunu güncelle (WebSocket için)
+    update3DPosition(posX, posY, posZ, yaw, pitch) {
+        if (gameWS.connected) {
+            gameWS.updatePosition(posX, posY, posZ, yaw, pitch);
+        }
     }
 
     async getCurrentRoom() {
@@ -199,45 +219,194 @@ class ServerRoomProvider extends RoomProvider {
     }
 
     async moveToRoom(direction) {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/move`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.sessionToken}`
-                },
-                body: JSON.stringify({ direction })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        // Freeze kontrolü
+        if (this.trapEffects.frozen) {
+            if (new Date() < new Date(this.trapEffects.frozenUntil)) {
+                return {
+                    success: false,
+                    error: "FROZEN",
+                    message: "Donduruldunuz! Hareket edemezsiniz."
+                };
+            } else {
+                this.trapEffects.frozen = false;
+                this.trapEffects.frozenUntil = null;
             }
+        }
 
-            const data = await response.json();
+        try {
+            const data = await api.move(direction, this.sessionToken);
 
             if (!data.success) {
                 return {
                     success: false,
                     error: data.error,
-                    message: data.message
+                    message: data.error
                 };
             }
 
             // Yeni oda bilgisini sakla
             this.currentRoom = data.room;
-            this.visitedRooms.push({
-                x: data.room.x,
-                y: data.room.y,
-                doors: data.room.doors
-            });
+
+            // Ziyaret edilen odalara ekle (eğer yoksa)
+            const exists = this.visitedRooms.some(
+                r => r.x === data.room.x && r.y === data.room.y
+            );
+            if (!exists) {
+                this.visitedRooms.push({
+                    x: data.room.x,
+                    y: data.room.y,
+                    doors: data.room.doors
+                });
+            }
+
+            // WebSocket ile oda değişikliğini bildir
+            if (gameWS.connected) {
+                gameWS.changeRoom(data.room.x, data.room.y);
+            }
+
+            // Ödül kontrolü
+            let rewardResult = null;
+            if (data.reward && data.reward.claimed) {
+                rewardResult = {
+                    claimed: true,
+                    amount: data.reward.amount,
+                    type: data.reward.type,
+                    isBigReward: data.reward.is_big_reward
+                };
+            }
+
+            // Tuzak kontrolü
+            let trapResult = null;
+            if (data.trap) {
+                trapResult = this.applyTrapEffect(data.trap);
+            }
 
             return {
                 success: true,
                 room: data.room,
-                rewards: data.rewards || [] // Ödüller varsa
+                reward: rewardResult,
+                trap: trapResult
             };
         } catch (error) {
             console.error('Failed to move:', error);
+            return {
+                success: false,
+                error: "NETWORK_ERROR",
+                message: "Sunucuya bağlanılamadı!"
+            };
+        }
+    }
+
+    applyTrapEffect(trapData) {
+        const now = new Date();
+
+        switch (trapData.trap_type) {
+            case 'freeze':
+                this.trapEffects.frozen = true;
+                this.trapEffects.frozenUntil = new Date(now.getTime() + trapData.duration * 1000);
+                break;
+
+            case 'blind':
+                this.trapEffects.blind = true;
+                this.trapEffects.blindUntil = new Date(now.getTime() + trapData.duration * 1000);
+                break;
+
+            case 'slow':
+                this.trapEffects.slow = true;
+                this.trapEffects.slowUntil = new Date(now.getTime() + trapData.duration * 1000);
+                this.trapEffects.speedMultiplier = trapData.speed_multiplier || 0.5;
+                break;
+
+            case 'reverse_controls':
+                this.trapEffects.reverseControls = true;
+                this.trapEffects.reverseUntil = new Date(now.getTime() + trapData.duration * 1000);
+                break;
+        }
+
+        return {
+            type: trapData.trap_type,
+            message: trapData.message,
+            duration: trapData.duration
+        };
+    }
+
+    // Tuzak efektlerini kontrol et ve güncelle
+    updateTrapEffects() {
+        const now = new Date();
+
+        if (this.trapEffects.frozen && now >= new Date(this.trapEffects.frozenUntil)) {
+            this.trapEffects.frozen = false;
+            this.trapEffects.frozenUntil = null;
+        }
+
+        if (this.trapEffects.blind && now >= new Date(this.trapEffects.blindUntil)) {
+            this.trapEffects.blind = false;
+            this.trapEffects.blindUntil = null;
+        }
+
+        if (this.trapEffects.slow && now >= new Date(this.trapEffects.slowUntil)) {
+            this.trapEffects.slow = false;
+            this.trapEffects.slowUntil = null;
+            this.trapEffects.speedMultiplier = 1.0;
+        }
+
+        if (this.trapEffects.reverseControls && now >= new Date(this.trapEffects.reverseUntil)) {
+            this.trapEffects.reverseControls = false;
+            this.trapEffects.reverseUntil = null;
+        }
+    }
+
+    getSpeedMultiplier() {
+        this.updateTrapEffects();
+        return this.trapEffects.slow ? this.trapEffects.speedMultiplier : 1.0;
+    }
+
+    isBlinded() {
+        this.updateTrapEffects();
+        return this.trapEffects.blind;
+    }
+
+    areControlsReversed() {
+        this.updateTrapEffects();
+        return this.trapEffects.reverseControls;
+    }
+
+    async usePortal() {
+        if (!this.currentRoom || !this.currentRoom.has_portal) {
+            return {
+                success: false,
+                error: "NO_PORTAL",
+                message: "Bu odada portal yok!"
+            };
+        }
+
+        try {
+            const data = await api.usePortal(this.sessionToken);
+
+            if (data.success) {
+                this.currentRoom = data.room;
+
+                // Ziyaret edilen odalara ekle
+                const exists = this.visitedRooms.some(
+                    r => r.x === data.room.x && r.y === data.room.y
+                );
+                if (!exists) {
+                    this.visitedRooms.push({
+                        x: data.room.x,
+                        y: data.room.y,
+                        doors: data.room.doors
+                    });
+                }
+
+                // WebSocket bildir
+                if (gameWS.connected) {
+                    gameWS.changeRoom(data.teleported_to.x, data.teleported_to.y);
+                }
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Portal kullanılamadı:', error);
             return {
                 success: false,
                 error: "NETWORK_ERROR",
@@ -251,11 +420,19 @@ class ServerRoomProvider extends RoomProvider {
         return this.visitedRooms;
     }
 
-    // Server provider için maze size bilinmez
     getMazeSize() {
-        return {
-            width: null,
-            height: null
-        };
+        return this.mazeSize;
+    }
+
+    // Odadaki diğer oyuncuları al
+    getOtherPlayers() {
+        return gameWS.getPlayersInRoom();
+    }
+
+    // Chat mesajı gönder
+    sendChatMessage(message) {
+        if (gameWS.connected) {
+            gameWS.sendChat(message);
+        }
     }
 }
