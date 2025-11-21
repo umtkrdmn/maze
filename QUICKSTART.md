@@ -145,7 +145,7 @@ python3 -m http.server 8080
 
 Backend doğru çalışıyorsa / If backend is running correctly:
 - ✅ Terminal'de "Uvicorn running on..." mesajı görünür
-- ✅ http://localhost:8000/docs açılır
+- ✅ http://localhost:7000/docs açılır
 - ✅ Swagger UI görünür
 
 Frontend doğru çalışıyorsa / If frontend is running correctly:
@@ -181,7 +181,7 @@ brew install python@3.11
 Backend için / For backend:
 ```bash
 # Hangi processin kullandığını bulun / Find which process is using it
-lsof -i :8000
+lsof -i :7000
 # Process'i durdurun / Stop the process
 kill -9 <PID>
 ```
@@ -239,7 +239,7 @@ pip install -r requirements.txt
 ## 📚 Daha Fazla Bilgi / More Information
 
 - 📖 Detaylı dokümantasyon: [README.md](README.md)
-- 🔧 API Dokümantasyonu: http://localhost:8000/docs
+- 🔧 API Dokümantasyonu: http://localhost:7000/docs
 - 🐛 Sorun bildirin: GitHub Issues
 
 ---
@@ -253,7 +253,7 @@ pip install -r requirements.txt
 - [ ] Repository klonlandı / Repository cloned
 - [ ] Backend script çalıştırıldı / Backend script executed
 - [ ] Frontend script çalıştırıldı / Frontend script executed
-- [ ] http://localhost:8000/docs açılıyor / opens
+- [ ] http://localhost:7000/docs açılıyor / opens
 - [ ] http://localhost:8080 açılıyor / opens
 - [ ] Hesap oluşturuldu / Account created
 - [ ] Oyun başladı / Game started

@@ -1,7 +1,7 @@
 // WebSocket Client for Multiplayer
 
 class GameWebSocket {
-    constructor(serverUrl = 'ws://localhost:8000/ws') {
+    constructor(serverUrl = 'ws://localhost:7000/ws') {
         this.serverUrl = serverUrl;
         this.ws = null;
         this.connected = false;

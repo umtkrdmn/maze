@@ -468,7 +468,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7000"]
 ```
 
 **docker-compose.yml**:
@@ -480,7 +480,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "7000:7000"
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/maze_game.db
     volumes:
