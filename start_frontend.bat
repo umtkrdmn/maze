@@ -20,10 +20,10 @@ if errorlevel 1 (
 
 echo Frontend başlatılıyor...
 echo.
-echo Oyun: http://localhost:8080
+echo Oyun: http://localhost:7080
 echo.
 echo Durdurmak için Ctrl+C kullanın
 echo.
 
 REM Python HTTP sunucusu başlat
-python -m http.server 8080
+python -m http.server 7080

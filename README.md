@@ -80,21 +80,21 @@ cd /home/user/maze
 
 # Basit HTTP server başlatın / Start simple HTTP server
 # Python 3:
-python -m http.server 8080
+python -m http.server 7080
 
 # veya Python 2:
-# python -m SimpleHTTPServer 8080
+# python -m SimpleHTTPServer 7080
 
 # veya Node.js varsa:
-# npx http-server -p 8080
+# npx http-server -p 7080
 ```
 
 Frontend şu adreste çalışacak / Frontend will run at:
-- Game: http://localhost:8080
+- Game: http://localhost:7080
 
 #### 4. Oyunu Başlatma / Starting the Game
 
-1. Tarayıcınızda http://localhost:8080 adresini açın / Open http://localhost:8080 in your browser
+1. Tarayıcınızda http://localhost:7080 adresini açın / Open http://localhost:7080 in your browser
 2. **Kayıt Ol** / **Register** butonuna tıklayın ve hesap oluşturun / click and create account
 3. Giriş yapın / Login
 4. Oyun otomatik olarak başlayacak! / Game will start automatically!

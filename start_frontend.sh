@@ -14,11 +14,11 @@ echo ""
 cd "$(dirname "$0")"
 
 # Port kontrolü
-PORT=8080
+PORT=7080
 if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
     echo "UYARI: Port $PORT zaten kullanımda!"
     echo "Başka bir port kullanılacak..."
-    PORT=8081
+    PORT=7081
 fi
 
 echo "Frontend başlatılıyor..."

@@ -42,7 +42,7 @@ Yeni bir terminal açın / Open a new terminal:
 
 Tarayıcınızda / In your browser:
 ```
-http://localhost:8080
+http://localhost:7080
 ```
 
 ---
@@ -79,7 +79,7 @@ start_frontend.bat
 
 Tarayıcınızda / In your browser:
 ```
-http://localhost:8080
+http://localhost:7080
 ```
 
 ---
@@ -136,7 +136,7 @@ python main.py
 
 ```bash
 # Ana dizinde / In main directory
-python3 -m http.server 8080
+python3 -m http.server 7080
 ```
 
 ---
@@ -149,7 +149,7 @@ Backend doğru çalışıyorsa / If backend is running correctly:
 - ✅ Swagger UI görünür
 
 Frontend doğru çalışıyorsa / If frontend is running correctly:
-- ✅ http://localhost:8080 açılır
+- ✅ http://localhost:7080 açılır
 - ✅ Login/Register modal'ı görünür
 - ✅ Console'da (F12) hata yok
 
@@ -189,8 +189,8 @@ kill -9 <PID>
 Frontend için / For frontend:
 ```bash
 # Farklı port kullanın / Use different port
-python3 -m http.server 8081
-# Tarayıcıda / In browser: http://localhost:8081
+python3 -m http.server 7081
+# Tarayıcıda / In browser: http://localhost:7081
 ```
 
 ### "Bağımlılık hatası" / "Dependency error"
@@ -254,7 +254,7 @@ pip install -r requirements.txt
 - [ ] Backend script çalıştırıldı / Backend script executed
 - [ ] Frontend script çalıştırıldı / Frontend script executed
 - [ ] http://localhost:7000/docs açılıyor / opens
-- [ ] http://localhost:8080 açılıyor / opens
+- [ ] http://localhost:7080 açılıyor / opens
 - [ ] Hesap oluşturuldu / Account created
 - [ ] Oyun başladı / Game started
 
