@@ -85,7 +85,11 @@ class Renderer {
         });
         this.videoElements = [];
 
-        if (!this.currentRoom) return;
+        console.log('renderRoom called, currentRoom:', this.currentRoom);
+        if (!this.currentRoom) {
+            console.warn('currentRoom is null, not rendering anything!');
+            return;
+        }
 
         const room = this.currentRoom;
         const halfSize = this.roomSize / 2;

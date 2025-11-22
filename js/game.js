@@ -46,14 +46,19 @@ class Game {
     async initGame() {
         try {
             // Başlangıç pozisyonu al
+            console.log('Getting start position...');
             const startPos = await this.roomProvider.getStartPosition();
+            console.log('Start position:', startPos);
             this.player.roomX = startPos.x;
             this.player.roomY = startPos.y;
 
             // İlk oda bilgisini al
+            console.log('Getting current room...');
             this.currentRoom = await this.roomProvider.getCurrentRoom();
+            console.log('Current room data:', this.currentRoom);
 
             // Renderer ve Minimap'i başlat
+            console.log('Initializing renderer with room:', this.currentRoom);
             this.renderer = new Renderer('game-canvas', this.currentRoom, this.player);
             this.minimap = new Minimap('minimap', this.roomProvider, this.player);
 
