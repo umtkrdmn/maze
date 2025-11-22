@@ -146,6 +146,7 @@ class UIManager {
     initGameUI() {
         // Portal key (P)
         document.addEventListener('keydown', (e) => {
+            if (!e.key) return; // Guard against undefined key
             if (e.key.toLowerCase() === 'p') {
                 this.usePortal();
             }

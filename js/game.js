@@ -265,6 +265,7 @@ class Game {
     onKeyDown(e) {
         // Don't handle keys when typing in input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (!e.key) return; // Guard against undefined key
 
         this.keys[e.key.toLowerCase()] = true;
 
@@ -274,6 +275,8 @@ class Game {
     }
 
     onKeyUp(e) {
+        if (!e.key) return; // Guard against undefined key
+
         this.keys[e.key.toLowerCase()] = false;
 
         if (e.key === 'ArrowLeft') this.keys['arrowleft'] = false;
@@ -482,12 +485,12 @@ class Game {
         // Update 3D audio listener position
         if (soundManager.initialized) {
             const forward = {
-                x: Math.sin(this.player.rotationY),
+                x: Math.sin(this.player.rotation),
                 y: 0,
-                z: Math.cos(this.player.rotationY)
+                z: Math.cos(this.player.rotation)
             };
             soundManager.updateListenerPosition(
-                { x: this.player.x, y: this.player.y, z: this.player.z },
+                { x: this.player.position.x, y: this.player.position.y, z: this.player.position.z },
                 forward,
                 { x: 0, y: 1, z: 0 }
             );
