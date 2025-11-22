@@ -120,6 +120,10 @@ class UIManager {
         this.hideAuthModal();
         // Game will start with LocalRoomProvider
         window.useServerProvider = false;
+        // Start the game
+        if (window.startGame) {
+            window.startGame();
+        }
     }
 
     startOnlineGame() {
@@ -131,6 +135,10 @@ class UIManager {
                 balanceEl.style.display = 'block';
                 balanceEl.textContent = `Bakiye: $${this.currentUser.balance.toFixed(2)}`;
             }
+        }
+        // Start the game
+        if (window.startGame) {
+            window.startGame();
         }
     }
 

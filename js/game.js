@@ -109,29 +109,39 @@ class Game {
     }
 
     initControls() {
+        console.log('Initializing controls...');
+
         // Klavye olayları
         document.addEventListener('keydown', (e) => this.onKeyDown(e));
         document.addEventListener('keyup', (e) => this.onKeyUp(e));
+        console.log('Keyboard events registered');
 
         // Mouse olayları
         document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        console.log('Mouse events registered');
 
         // Canvas'a tıklandığında pointer lock
         this.renderer.canvas.addEventListener('click', () => {
+            console.log('Canvas clicked, requesting pointer lock...');
             this.renderer.canvas.requestPointerLock();
         });
 
         // Pointer lock başarılı olduğunda
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === this.renderer.canvas) {
+                console.log('Pointer lock activated!');
                 this.renderer.enableAudio();
                 soundManager.resume();
+            } else {
+                console.log('Pointer lock released');
             }
         });
 
         // Son oda pozisyonu (oda değişimi algılama için)
         this.lastRoomX = this.player.roomX;
         this.lastRoomY = this.player.roomY;
+
+        console.log('Controls initialized. Click on screen to start playing!');
     }
 
     initMultiplayer() {
