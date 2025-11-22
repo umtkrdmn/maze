@@ -3,19 +3,37 @@
 class Minimap {
     constructor(canvasId, roomProvider, player) {
         this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) {
+            console.error('Minimap canvas not found:', canvasId);
+            return;
+        }
+
         this.ctx = this.canvas.getContext('2d');
         this.roomProvider = roomProvider; // Artık maze yok, provider var
         this.player = player;
         this.cellSize = 40;
         this.wallThickness = 4;
 
+        // Canvas boyutlarını ayarla
+        this.canvas.width = 300;
+        this.canvas.height = 300;
+
         // Maze boyutunu al (eğer varsa)
         const mazeSize = this.roomProvider.getMazeSize();
         this.mazeWidth = mazeSize.width || 4; // Default 4x4
         this.mazeHeight = mazeSize.height || 4;
+
+        console.log('Minimap initialized:', {
+            mazeSize: this.mazeWidth + 'x' + this.mazeHeight,
+            canvasSize: this.canvas.width + 'x' + this.canvas.height
+        });
     }
 
     draw() {
+        if (!this.canvas || !this.ctx) {
+            return; // Minimap başlatılamadıysa çizme
+        }
+
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;
