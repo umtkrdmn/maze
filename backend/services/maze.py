@@ -370,6 +370,21 @@ class MazeService:
 
     async def _room_to_dict(self, room: Room) -> Dict[str, Any]:
         """Convert room to dictionary for API response"""
+        # Convert ads array to dict keyed by wall direction
+        ads_dict = {}
+        wallTextures_dict = {}
+        if room.ads:
+            for ad in room.ads:
+                ads_dict[ad.wall] = {
+                    "type": ad.ad_type,
+                    "url": ad.content_url,
+                    "text": ad.content_text,
+                    "click_url": ad.click_url
+                }
+                # Also set wallTextures for compatibility
+                if ad.content_url:
+                    wallTextures_dict[ad.wall] = ad.content_url
+
         return {
             "x": room.x,
             "y": room.y,
@@ -393,14 +408,6 @@ class MazeService:
                 "ambient_light_color": room.design.ambient_light_color if room.design else "#FFFFFF",
                 "ambient_light_intensity": room.design.ambient_light_intensity if room.design else 0.5
             } if room.design else None,
-            "ads": [
-                {
-                    "wall": ad.wall,
-                    "type": ad.ad_type,
-                    "url": ad.content_url,
-                    "text": ad.content_text,
-                    "click_url": ad.click_url
-                }
-                for ad in room.ads
-            ] if room.ads else []
+            "ads": ads_dict,
+            "wallTextures": wallTextures_dict
         }
