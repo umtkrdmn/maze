@@ -76,6 +76,29 @@ async def lifespan(app: FastAPI):
     await init_db()
     print("Database initialized")
 
+    # Create default maze if none exists
+    from database import async_session
+    from models.maze import Maze
+    from sqlalchemy import select
+
+    async with async_session() as db:
+        result = await db.execute(select(Maze))
+        existing_mazes = result.scalars().all()
+
+        if not existing_mazes:
+            print("No mazes found, creating default maze...")
+            maze_service = MazeService(db)
+            await maze_service.create_maze(
+                name="Default Maze",
+                width=10,
+                height=10,
+                big_reward_chance=0.01,
+                small_reward_chance=0.3,
+                portal_count=3
+            )
+            await db.commit()
+            print("Default maze created successfully!")
+
     # Start background tasks
     reward_task = asyncio.create_task(reward_spawner_task())
 
