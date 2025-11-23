@@ -7,13 +7,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
 from models.user import User
-from config import DATABASE_URL
+from config import settings
 
 
 async def make_admin(email: str):
     """Make user with given email an admin"""
     # Create engine
-    engine = create_async_engine(DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.DATABASE_URL, echo=True)
     async_session = sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
@@ -39,7 +39,7 @@ async def make_admin(email: str):
 
 async def list_users():
     """List all users"""
-    engine = create_async_engine(DATABASE_URL, echo=False)
+    engine = create_async_engine(settings.DATABASE_URL, echo=False)
     async_session = sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
