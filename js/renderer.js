@@ -407,7 +407,7 @@ class Renderer {
             }
 
             // Duvar texturu varsa ekle
-            if (room.wallTextures[direction]) {
+            if (room.wallTextures && room.wallTextures[direction]) {
                 this.addWallTexture(wall, room.wallTextures[direction]);
             }
 
