@@ -563,14 +563,29 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     // Wait for UI manager to determine online/offline mode
     setTimeout(() => {
-        // Only start if auth modal is hidden (user logged in or chose offline)
-        // AND maze selection modal is not showing (to avoid starting before maze selection)
+        // Don't auto-start if:
+        // 1. Game already exists (user manually started it)
+        // 2. Server provider mode (user will select maze)
+        // 3. Auth modal is visible (user hasn't logged in/chosen offline yet)
+        // 4. Maze selection modal is showing (user is selecting a maze)
+
+        if (window.game) {
+            console.log('Game already exists, skipping auto-start');
+            return;
+        }
+
+        if (window.useServerProvider) {
+            console.log('Server provider mode, skipping auto-start (waiting for maze selection)');
+            return;
+        }
+
         const authModal = document.getElementById('auth-modal');
         const mazeModal = document.getElementById('maze-selection-modal');
         const authHidden = !authModal || authModal.style.display === 'none';
         const mazeModalNotShowing = !mazeModal || mazeModal.style.display !== 'flex';
 
         if (authHidden && mazeModalNotShowing) {
+            console.log('Auto-starting game in offline mode');
             window.game = new Game();
         }
     }, 100);
