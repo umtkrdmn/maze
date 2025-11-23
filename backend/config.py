@@ -1,9 +1,12 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 import secrets
 
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(extra='ignore')  # Ignore extra fields from .env
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./maze.db"
 
@@ -28,9 +31,6 @@ class Settings(BaseSettings):
 
     # Company Revenue Share
     COMPANY_REVENUE_SHARE: float = 0.3  # 30%
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()
