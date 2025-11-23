@@ -57,6 +57,7 @@ class GameStartResponse(BaseModel):
     session_token: str
     room: RoomResponse
     maze_size: Dict[str, int]
+    maze_name: str
 
 
 class MoveRequest(BaseModel):

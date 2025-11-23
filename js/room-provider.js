@@ -174,6 +174,7 @@ class ServerRoomProvider extends RoomProvider {
             this.sessionToken = data.session_token;
             this.currentRoom = data.room;
             this.mazeSize = data.maze_size;
+            this.mazeName = data.maze_name;
 
             // İlk oda ziyaret edildi
             this.visitedRooms.push({

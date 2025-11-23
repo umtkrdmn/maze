@@ -67,7 +67,8 @@ async def start_game_with_maze(
     return GameStartResponse(
         session_token=session.session_token,
         room=RoomResponse(**room_data),
-        maze_size={"width": maze.width, "height": maze.height}
+        maze_size={"width": maze.width, "height": maze.height},
+        maze_name=maze.name
     )
 
 
@@ -97,7 +98,8 @@ async def start_game(
     return GameStartResponse(
         session_token=session.session_token,
         room=RoomResponse(**room_data),
-        maze_size={"width": maze.width, "height": maze.height}
+        maze_size={"width": maze.width, "height": maze.height},
+        maze_name=maze.name
     )
 
 

@@ -385,9 +385,30 @@ class Game {
     }
 
     updateDebugInfo() {
+        const mazeEl = document.getElementById('maze-name');
         const roomEl = document.getElementById('current-room');
         const dirEl = document.getElementById('player-direction');
         const doorsEl = document.getElementById('available-doors');
+
+        // Update maze info
+        if (mazeEl && this.roomProvider) {
+            let mazeName = 'Çevrimdışı';
+            let mazeSize = '';
+
+            if (this.roomProvider.mazeName) {
+                // ServerRoomProvider
+                mazeName = this.roomProvider.mazeName;
+                if (this.roomProvider.mazeSize) {
+                    mazeSize = ` (${this.roomProvider.mazeSize.width}×${this.roomProvider.mazeSize.height})`;
+                }
+            } else if (this.roomProvider.getMazeSize) {
+                // LocalRoomProvider
+                const size = this.roomProvider.getMazeSize();
+                mazeSize = ` (${size.width}×${size.height})`;
+            }
+
+            mazeEl.textContent = `Labirent: ${mazeName}${mazeSize}`;
+        }
 
         if (roomEl) {
             roomEl.textContent = `Oda: (${this.player.roomX}, ${this.player.roomY})`;
