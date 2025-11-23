@@ -265,6 +265,16 @@ class RoomService:
         )
         return result.scalars().all()
 
+    async def get_all_rooms(self, maze_id: int) -> List[Room]:
+        """Get all rooms in a maze (for admin use)"""
+        result = await self.db.execute(
+            select(Room)
+            .options(selectinload(Room.design))
+            .where(Room.maze_id == maze_id)
+            .order_by(Room.x, Room.y)
+        )
+        return result.scalars().all()
+
     async def record_ad_view(self, ad_id: int, duration: float = 0):
         """Record an ad view"""
         result = await self.db.execute(
