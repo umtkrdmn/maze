@@ -53,16 +53,11 @@ class MazeService:
         # Generate doors (ensure connectivity)
         await self._generate_doors(rooms, width, height)
 
-        # Generate random designs for all rooms
-        for room in rooms:
-            design = self._generate_random_design(room.id)
-            self.db.add(design)
-
-            # Generate ads for walls without doors
-            await self._generate_random_ads(room)
-
         # Add portals
         await self._add_portals(maze.id, rooms, portal_count)
+
+        # Note: Room designs and ads are now created lazily when rooms are purchased
+        # This significantly reduces database size and maze creation time
 
         await self.db.commit()
         await self.db.refresh(maze)

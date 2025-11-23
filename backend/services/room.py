@@ -49,6 +49,18 @@ class RoomService:
         room.is_sold = True
         room.sold_at = datetime.utcnow()
 
+        # Create default design if it doesn't exist (lazy loading)
+        if not room.design:
+            design = RoomDesign(
+                room_id=room.id,
+                template="default",
+                wall_color="#808080",
+                floor_color="#6B4E3D",
+                ceiling_color="#EEEEEE",
+                ambient_light_intensity=0.5
+            )
+            self.db.add(design)
+
         # Create transaction
         transaction = Transaction(
             user_id=user.id,
