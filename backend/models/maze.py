@@ -35,7 +35,7 @@ class Maze(Base):
 
     # Relationships
     rooms = relationship("Room", back_populates="maze", cascade="all, delete-orphan")
-    game_sessions = relationship("GameSession", back_populates="maze")
+    game_sessions = relationship("GameSession", back_populates="maze", cascade="all, delete-orphan")
 
 
 class Room(Base):
