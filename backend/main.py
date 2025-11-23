@@ -25,13 +25,14 @@ async def reward_spawner_task():
     while True:
         try:
             async with async_session() as db:
-                # Get active maze
+                # Get active mazes (there can be multiple)
                 result = await db.execute(
                     select(Maze).where(Maze.is_active == True)
                 )
-                maze = result.scalar_one_or_none()
+                mazes = result.scalars().all()
 
-                if maze:
+                # Process each active maze
+                for maze in mazes:
                     reward_service = RewardService(db)
 
                     # Expire old rewards
