@@ -69,36 +69,64 @@ class MazeService:
         return maze
 
     async def _generate_doors(self, rooms: List[Room], width: int, height: int):
-        """Generate doors ensuring maze is solvable"""
+        """Generate doors using DFS to ensure all rooms are connected"""
         room_map = {(r.x, r.y): r for r in rooms}
+        visited = set()
 
-        # Use a simple algorithm: random doors with connectivity check
+        def dfs(x: int, y: int):
+            """Depth-first search to create a spanning tree"""
+            visited.add((x, y))
+            room = room_map.get((x, y))
+
+            # Possible directions: North, South, East, West
+            directions = [
+                ('north', 0, 1, 'south'),   # (direction, dx, dy, opposite_direction)
+                ('south', 0, -1, 'north'),
+                ('east', 1, 0, 'west'),
+                ('west', -1, 0, 'east')
+            ]
+
+            # Shuffle for randomness
+            random.shuffle(directions)
+
+            for direction, dx, dy, opposite in directions:
+                nx, ny = x + dx, y + dy
+
+                # Check bounds
+                if not (0 <= nx < width and 0 <= ny < height):
+                    continue
+
+                neighbor = room_map.get((nx, ny))
+                if not neighbor or (nx, ny) in visited:
+                    continue
+
+                # Create door connection
+                setattr(room, f'door_{direction}', True)
+                setattr(neighbor, f'door_{opposite}', True)
+
+                # Recursively visit neighbor
+                dfs(nx, ny)
+
+        # Start DFS from (0, 0)
+        dfs(0, 0)
+
+        # Add extra doors for loops (30% chance per unconnected edge)
         for room in rooms:
             x, y = room.x, room.y
 
-            # Randomly add doors (40% chance per direction)
-            if y < height - 1 and random.random() < 0.4:  # North
-                room.door_north = True
+            # Check north
+            if y < height - 1 and not room.door_north and random.random() < 0.3:
                 neighbor = room_map.get((x, y + 1))
                 if neighbor:
+                    room.door_north = True
                     neighbor.door_south = True
 
-            if x < width - 1 and random.random() < 0.4:  # East
-                room.door_east = True
+            # Check east
+            if x < width - 1 and not room.door_east and random.random() < 0.3:
                 neighbor = room_map.get((x + 1, y))
                 if neighbor:
+                    room.door_east = True
                     neighbor.door_west = True
-
-        # Ensure start room (0,0) has at least one door
-        start_room = room_map.get((0, 0))
-        if start_room and not any([start_room.door_north, start_room.door_south,
-                                    start_room.door_east, start_room.door_west]):
-            if height > 1:
-                start_room.door_north = True
-                room_map[(0, 1)].door_south = True
-            elif width > 1:
-                start_room.door_east = True
-                room_map[(1, 0)].door_west = True
 
     def _generate_random_design(self, room_id: int) -> RoomDesign:
         """Generate random room design"""

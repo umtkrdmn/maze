@@ -300,19 +300,47 @@ class Game {
         }
     }
 
-    async onRoomChange() {
+    async onRoomChange(direction) {
         // Play door sound
         if (soundManager.initialized) {
             soundManager.playDoorOpen();
         }
 
-        // Provider'a yeni pozisyonu bildir
-        if (this.roomProvider.updatePosition) {
-            this.roomProvider.updatePosition(this.player.roomX, this.player.roomY);
-        }
+        // For ServerRoomProvider, call moveToRoom with direction
+        if (direction && this.roomProvider instanceof ServerRoomProvider) {
+            console.log('🔍 GAME: Calling moveToRoom with direction:', direction);
+            const moveResult = await this.roomProvider.moveToRoom(direction);
 
-        // Provider'dan yeni oda bilgisini al
-        this.currentRoom = await this.roomProvider.getCurrentRoom();
+            if (!moveResult.success) {
+                console.error('🔍 GAME: Move failed:', moveResult.error);
+                // Revert player position on failure
+                if (direction === 'north') this.player.roomY++;
+                else if (direction === 'south') this.player.roomY--;
+                else if (direction === 'east') this.player.roomX--;
+                else if (direction === 'west') this.player.roomX++;
+
+                this.lastRoomX = this.player.roomX;
+                this.lastRoomY = this.player.roomY;
+                return;
+            }
+
+            this.currentRoom = moveResult.room;
+            this.lastMoveResult = moveResult;
+            console.log('🔍 GAME: Room updated to:', this.currentRoom.x, this.currentRoom.y);
+
+            // CRITICAL: Sync player position with server's room coordinates
+            this.player.roomX = this.currentRoom.x;
+            this.player.roomY = this.currentRoom.y;
+            this.lastRoomX = this.player.roomX;
+            this.lastRoomY = this.player.roomY;
+            console.log('🔍 GAME: Player position synced to:', this.player.roomX, this.player.roomY);
+        } else {
+            // For LocalRoomProvider, use old method
+            if (this.roomProvider.updatePosition) {
+                this.roomProvider.updatePosition(this.player.roomX, this.player.roomY);
+            }
+            this.currentRoom = await this.roomProvider.getCurrentRoom();
+        }
 
         // Renderer'ı güncelle
         this.renderer.updateRoom(this.currentRoom);
@@ -505,9 +533,21 @@ class Game {
 
         // Oda değişimi kontrolü
         if (this.player.roomX !== this.lastRoomX || this.player.roomY !== this.lastRoomY) {
+            // Determine direction based on coordinate change
+            let direction = null;
+            if (this.player.roomX > this.lastRoomX) {
+                direction = 'east';
+            } else if (this.player.roomX < this.lastRoomX) {
+                direction = 'west';
+            } else if (this.player.roomY < this.lastRoomY) {
+                direction = 'north';  // roomY-- means north
+            } else if (this.player.roomY > this.lastRoomY) {
+                direction = 'south';  // roomY++ means south
+            }
+
             this.lastRoomX = this.player.roomX;
             this.lastRoomY = this.player.roomY;
-            this.onRoomChange();
+            this.onRoomChange(direction);
         }
 
         // Update 3D audio listener position
