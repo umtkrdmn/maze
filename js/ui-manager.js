@@ -187,10 +187,6 @@ class UIManager {
                             <div class="maze-selection-info-label">Toplam Oda</div>
                             <div class="maze-selection-info-value">${maze.total_rooms}</div>
                         </div>
-                        <div class="maze-selection-info-item">
-                            <div class="maze-selection-info-label">Portal</div>
-                            <div class="maze-selection-info-value">${maze.portal_count}</div>
-                        </div>
                     </div>
                     <button class="btn btn-primary">Başla</button>
                 </div>

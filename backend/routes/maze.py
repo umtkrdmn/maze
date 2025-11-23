@@ -33,8 +33,7 @@ async def list_available_mazes(db: AsyncSession = Depends(get_db)):
                 "name": m.name,
                 "width": m.width,
                 "height": m.height,
-                "total_rooms": m.width * m.height,
-                "portal_count": m.portal_count
+                "total_rooms": m.width * m.height
             }
             for m in mazes
         ]
