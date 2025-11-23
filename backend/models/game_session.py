@@ -43,7 +43,7 @@ class GameSession(Base):
     user = relationship("User", back_populates="game_sessions")
     maze = relationship("Maze", back_populates="game_sessions")
     visited_rooms = relationship("VisitedRoom", back_populates="session", cascade="all, delete-orphan")
-    player_position = relationship("PlayerPosition", back_populates="session", uselist=False)
+    player_position = relationship("PlayerPosition", back_populates="session", uselist=False, cascade="all, delete-orphan")
 
 
 class PlayerPosition(Base):
