@@ -3,9 +3,13 @@
 class Game {
     constructor() {
         // Provider seçimi: Server veya Local
+        console.log('Game constructor - useServerProvider:', window.useServerProvider, 'api.token:', !!api.token, 'selectedMazeId:', window.selectedMazeId);
+
         if (window.useServerProvider && api.token) {
+            console.log('Using ServerRoomProvider');
             this.roomProvider = new ServerRoomProvider();
         } else {
+            console.log('Using LocalRoomProvider (fallback)');
             this.roomProvider = new LocalRoomProvider(10, 10);
         }
 
@@ -85,6 +89,11 @@ class Game {
             console.log('Mouse ile etrafa bakabilirsiniz (Canvas\'a tıklayın)');
         } catch (error) {
             console.error('Oyun başlatılamadı:', error);
+            console.error('Error details:', error.message, error.stack);
+            console.error('Provider type:', this.roomProvider.constructor.name);
+            console.error('Session token:', this.roomProvider.sessionToken);
+            console.error('Selected maze ID:', window.selectedMazeId);
+            console.error('API token:', !!api.token);
             // Fallback to local mode
             if (this.roomProvider instanceof ServerRoomProvider) {
                 console.log('Çevrimdışı moda geçiliyor...');
