@@ -332,9 +332,7 @@ class Game {
 
         // Clear other players (they're in different room now)
         this.otherPlayers.clear();
-        if (this.renderer) {
-            this.renderer.clearOtherPlayers();
-        }
+        // Note: renderer doesn't have clearOtherPlayers method
 
         this.updateDebugInfo();
         this.updatePortalIndicator();
