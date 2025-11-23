@@ -104,6 +104,29 @@ async def activate_maze(
     return {"success": True, "message": f"Maze '{maze.name}' activated"}
 
 
+@router.delete("/maze/{maze_id}")
+async def delete_maze(
+    maze_id: int,
+    admin_user=Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a maze and all its related data"""
+    result = await db.execute(select(Maze).where(Maze.id == maze_id))
+    maze = result.scalar_one_or_none()
+
+    if not maze:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Maze not found"
+        )
+
+    maze_name = maze.name
+    await db.delete(maze)
+    await db.commit()
+
+    return {"success": True, "message": f"Maze '{maze_name}' deleted successfully"}
+
+
 @router.put("/maze/{maze_id}/rewards")
 async def update_reward_chances(
     maze_id: int,

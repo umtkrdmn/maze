@@ -145,6 +145,9 @@ class AdminPanel {
                     <button class="btn btn-warning" onclick="adminPanel.spawnReward(${maze.id}, 'big')">
                         💰 Ödül
                     </button>
+                    <button class="btn btn-danger" onclick="adminPanel.deleteMaze(${maze.id}, '${maze.name}')">
+                        🗑️ Sil
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -216,6 +219,31 @@ class AdminPanel {
         } catch (error) {
             console.error('Error activating maze:', error);
             this.showError('Labirent aktifleştirilemedi');
+        }
+    }
+
+    async deleteMaze(mazeId, mazeName) {
+        // Confirm before deleting
+        if (!confirm(`"${mazeName}" labirentini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:7100/api/admin/maze/${mazeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${api.token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete maze');
+
+            const data = await response.json();
+            this.showSuccess(data.message);
+            this.loadMazes();
+        } catch (error) {
+            console.error('Error deleting maze:', error);
+            this.showError('Labirent silinemedi: ' + error.message);
         }
     }
 
