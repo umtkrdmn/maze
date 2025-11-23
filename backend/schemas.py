@@ -50,7 +50,7 @@ class RoomResponse(BaseModel):
     is_sold: bool
     owner_id: Optional[int]
     design: Optional[Dict[str, Any]]
-    ads: List[Dict[str, Any]]
+    ads: Dict[str, Any]  # wall -> ad data mapping (north, south, east, west)
 
 
 class GameStartResponse(BaseModel):
