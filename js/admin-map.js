@@ -235,8 +235,14 @@ class AdminMap {
         if (!this.mazeData) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
+
+        // Canvas scaling'i hesapla (CSS boyutu vs gerçek boyut)
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        // Mouse koordinatlarını canvas koordinatlarına çevir
+        const clickX = (event.clientX - rect.left) * scaleX;
+        const clickY = (event.clientY - rect.top) * scaleY;
 
         // Tıklanan odayı bul
         for (let room of this.rooms) {
@@ -244,8 +250,8 @@ class AdminMap {
             const y = this.offsetY + (this.mazeData.height - 1 - room.y) * this.cellSize;
             const size = this.cellSize;
 
-            if (clickX >= x && clickX <= x + size &&
-                clickY >= y && clickY <= y + size) {
+            if (clickX >= x && clickX < x + size &&
+                clickY >= y && clickY < y + size) {
                 this.selectedRoom = room;
                 this.draw();
                 this.showRoomDetails(room);
@@ -258,8 +264,14 @@ class AdminMap {
         if (!this.mazeData) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+
+        // Canvas scaling'i hesapla
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        // Mouse koordinatlarını canvas koordinatlarına çevir
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
 
         // Mouse altındaki odayı kontrol et
         let isOverRoom = false;
@@ -268,8 +280,8 @@ class AdminMap {
             const y = this.offsetY + (this.mazeData.height - 1 - room.y) * this.cellSize;
             const size = this.cellSize;
 
-            if (mouseX >= x && mouseX <= x + size &&
-                mouseY >= y && mouseY <= y + size) {
+            if (mouseX >= x && mouseX < x + size &&
+                mouseY >= y && mouseY < y + size) {
                 isOverRoom = true;
                 break;
             }
