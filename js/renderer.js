@@ -714,7 +714,7 @@ class Renderer {
             }
         } else {
             // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
-            if (adConfig.url.startsWith('canvas:')) {
+            if (!adConfig.url || adConfig.url.startsWith('canvas:')) {
                 // Canvas texture oluştur (yüksek çözünürlük için daha büyük)
                 const canvas = document.createElement('canvas');
                 canvas.width = 1024;  // Daha yüksek çözünürlük
@@ -724,7 +724,7 @@ class Renderer {
                 // Arka plan rengi
                 const bgColor = adConfig.bgColor || '#FF6B6B';
                 const textColor = adConfig.textColor || '#FFFFFF';
-                const text = adConfig.text || 'REKLAM';
+                const text = adConfig.text || adConfig.text || 'REKLAM';
 
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
