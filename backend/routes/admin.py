@@ -284,7 +284,11 @@ async def get_maze_rooms(
 
     # Get active rewards and traps
     rewards_result = await db.execute(
-        select(Reward).where(Reward.maze_id == maze_id, Reward.is_active == True)
+        select(Reward).where(
+            Reward.maze_id == maze_id,
+            Reward.is_claimed == False,
+            Reward.is_expired == False
+        )
     )
     rewards = rewards_result.scalars().all()
 
