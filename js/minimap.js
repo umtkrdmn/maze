@@ -44,6 +44,12 @@ class Minimap {
 
         // SADECE ziyaret edilen odaları çiz (FOG OF WAR)
         const visitedRooms = this.roomProvider.getVisitedRooms();
+
+        // Debug log (ilk çağrıda)
+        if (!this._debugLogged) {
+            console.log('Minimap draw - Visited rooms:', visitedRooms);
+            this._debugLogged = true;
+        }
         const offsetX = (width - this.mazeWidth * this.cellSize) / 2;
         const offsetY = (height - this.mazeHeight * this.cellSize) / 2;
 
