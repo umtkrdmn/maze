@@ -11,7 +11,6 @@ class Minimap {
         this.ctx = this.canvas.getContext('2d');
         this.roomProvider = roomProvider; // Artık maze yok, provider var
         this.player = player;
-        this.cellSize = 40;
         this.wallThickness = 4;
 
         // Canvas boyutlarını ayarla (CSS boyutlarıyla eşleşmeli)
@@ -22,6 +21,15 @@ class Minimap {
         const mazeSize = this.roomProvider.getMazeSize();
         this.mazeWidth = mazeSize.width || 4; // Default 4x4
         this.mazeHeight = mazeSize.height || 4;
+
+        // Cell size'ı dinamik hesapla (padding ile)
+        const padding = 20; // Canvas kenarlarından boşluk
+        const availableWidth = this.canvas.width - padding * 2;
+        const availableHeight = this.canvas.height - padding * 2;
+        this.cellSize = Math.min(
+            Math.floor(availableWidth / this.mazeWidth),
+            Math.floor(availableHeight / this.mazeHeight)
+        );
 
         console.log('Minimap initialized:', {
             mazeSize: this.mazeWidth + 'x' + this.mazeHeight,
