@@ -564,8 +564,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // Wait for UI manager to determine online/offline mode
     setTimeout(() => {
         // Only start if auth modal is hidden (user logged in or chose offline)
+        // AND maze selection modal is not showing (to avoid starting before maze selection)
         const authModal = document.getElementById('auth-modal');
-        if (!authModal || authModal.style.display === 'none') {
+        const mazeModal = document.getElementById('maze-selection-modal');
+        const authHidden = !authModal || authModal.style.display === 'none';
+        const mazeModalNotShowing = !mazeModal || mazeModal.style.display !== 'flex';
+
+        if (authHidden && mazeModalNotShowing) {
             window.game = new Game();
         }
     }, 100);
