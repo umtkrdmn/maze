@@ -14,9 +14,9 @@ class Minimap {
         this.cellSize = 40;
         this.wallThickness = 4;
 
-        // Canvas boyutlarını ayarla
-        this.canvas.width = 300;
-        this.canvas.height = 300;
+        // Canvas boyutlarını ayarla (CSS boyutlarıyla eşleşmeli)
+        this.canvas.width = 200;
+        this.canvas.height = 200;
 
         // Maze boyutunu al (eğer varsa)
         const mazeSize = this.roomProvider.getMazeSize();
