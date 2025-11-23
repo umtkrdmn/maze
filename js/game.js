@@ -327,6 +327,13 @@ class Game {
             this.currentRoom = moveResult.room;
             this.lastMoveResult = moveResult;
             console.log('🔍 GAME: Room updated to:', this.currentRoom.x, this.currentRoom.y);
+
+            // CRITICAL: Sync player position with server's room coordinates
+            this.player.roomX = this.currentRoom.x;
+            this.player.roomY = this.currentRoom.y;
+            this.lastRoomX = this.player.roomX;
+            this.lastRoomY = this.player.roomY;
+            console.log('🔍 GAME: Player position synced to:', this.player.roomX, this.player.roomY);
         } else {
             // For LocalRoomProvider, use old method
             if (this.roomProvider.updatePosition) {
