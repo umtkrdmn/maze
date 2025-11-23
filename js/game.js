@@ -569,7 +569,15 @@ document.addEventListener('startOfflineGame', () => {
 
 // Handle auth completion
 window.startGame = function() {
-    if (!window.game) {
-        window.game = new Game();
+    console.log('Starting game with selectedMazeId:', window.selectedMazeId);
+
+    // Destroy existing game if any
+    if (window.game) {
+        console.log('Destroying existing game instance');
+        window.game.destroy();
+        window.game = null;
     }
+
+    // Create new game instance
+    window.game = new Game();
 };
