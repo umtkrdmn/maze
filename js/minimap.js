@@ -64,9 +64,9 @@ class Minimap {
         const viewportCenterX = width / 2;
         const viewportCenterY = height / 2;
 
-        // Oyuncunun dünya koordinatlarındaki pozisyonu
+        // Oyuncunun dünya koordinatlarındaki pozisyonu (Y ekseni ters çevrilmiş)
         const playerWorldX = this.player.roomX * this.cellSize;
-        const playerWorldY = this.player.roomY * this.cellSize;
+        const playerWorldY = -this.player.roomY * this.cellSize;  // Negative: flip Y axis
 
         // Offset hesapla - oyuncuyu merkeze getir
         const offsetX = viewportCenterX - playerWorldX;
@@ -83,7 +83,7 @@ class Minimap {
     drawRoom(room, offsetX, offsetY) {
         const ctx = this.ctx;
         const x = offsetX + room.x * this.cellSize;
-        const y = offsetY + room.y * this.cellSize;
+        const y = offsetY - room.y * this.cellSize;  // Negative: flip Y axis (north = up)
         const size = this.cellSize;
 
         // Oda zemini
@@ -173,9 +173,9 @@ class Minimap {
         const normalizedX = (this.player.position.x + this.player.roomSize / 2) / this.player.roomSize;
         const normalizedZ = (this.player.position.z + this.player.roomSize / 2) / this.player.roomSize;
 
-        // Minimap koordinatlarına çevir
+        // Minimap koordinatlarına çevir (Y ekseni ters çevrilmiş)
         const x = offsetX + this.player.roomX * this.cellSize + normalizedX * this.cellSize;
-        const y = offsetY + this.player.roomY * this.cellSize + normalizedZ * this.cellSize;
+        const y = offsetY - this.player.roomY * this.cellSize + normalizedZ * this.cellSize;
         const radius = 8;
 
         // Oyuncu dairesi
