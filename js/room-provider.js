@@ -168,13 +168,21 @@ class ServerRoomProvider extends RoomProvider {
         try {
             // API client'ı kullan (seçilen maze ID ile)
             const mazeId = window.selectedMazeId || null;
+            console.log('ServerRoomProvider: Starting game with mazeId:', mazeId);
             const data = await api.startGame(mazeId);
+
+            console.log('ServerRoomProvider: Received data from backend:', data);
+            console.log('ServerRoomProvider: Room data:', data.room);
+            console.log('ServerRoomProvider: Room doors:', data.room?.doors);
 
             // Session token sakla
             this.sessionToken = data.session_token;
             this.currentRoom = data.room;
             this.mazeSize = data.maze_size;
             this.mazeName = data.maze_name;
+
+            console.log('ServerRoomProvider: Stored currentRoom:', this.currentRoom);
+            console.log('ServerRoomProvider: Maze name:', this.mazeName, 'Size:', this.mazeSize);
 
             // İlk oda ziyaret edildi
             this.visitedRooms.push({
