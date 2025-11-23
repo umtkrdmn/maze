@@ -336,8 +336,16 @@ class MazeService:
         new_x = session.current_room_x + dx
         new_y = session.current_room_y + dy
 
+        print(f"🔍 MOVE DEBUG: direction={direction}, dx={dx}, dy={dy}")
+        print(f"🔍 MOVE DEBUG: current=({session.current_room_x}, {session.current_room_y})")
+        print(f"🔍 MOVE DEBUG: calculated new=({new_x}, {new_y})")
+
         # Get new room
         new_room = await self.get_room(session.maze_id, new_x, new_y)
+        print(f"🔍 MOVE DEBUG: new_room found: {new_room is not None}")
+        if new_room:
+            print(f"🔍 MOVE DEBUG: new_room coordinates: ({new_room.x}, {new_room.y})")
+
         if not new_room:
             return {"success": False, "error": "No room in that direction"}
 

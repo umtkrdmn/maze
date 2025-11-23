@@ -244,9 +244,11 @@ class ServerRoomProvider extends RoomProvider {
         }
 
         try {
+            console.log('🔍 FRONTEND MOVE: Requesting move', direction);
             const data = await api.move(direction, this.sessionToken);
 
             if (!data.success) {
+                console.log('🔍 FRONTEND MOVE: Failed', data.error);
                 return {
                     success: false,
                     error: data.error,
@@ -254,8 +256,12 @@ class ServerRoomProvider extends RoomProvider {
                 };
             }
 
+            console.log('🔍 FRONTEND MOVE: Received room data:', data.room);
+            console.log('🔍 FRONTEND MOVE: Room coordinates:', data.room.x, data.room.y);
+
             // Yeni oda bilgisini sakla
             this.currentRoom = data.room;
+            console.log('🔍 FRONTEND MOVE: currentRoom updated to:', this.currentRoom.x, this.currentRoom.y);
 
             // Ziyaret edilen odalara ekle (eğer yoksa)
             const exists = this.visitedRooms.some(
