@@ -75,8 +75,9 @@ class ApiClient {
     }
 
     // Maze endpoints
-    async startGame() {
-        return this.request('/api/maze/start', { method: 'POST' });
+    async startGame(mazeId = null) {
+        const endpoint = mazeId ? `/api/maze/start/${mazeId}` : '/api/maze/start';
+        return this.request(endpoint, { method: 'POST' });
     }
 
     async move(direction, sessionToken) {

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - 3D Labirent Oyunu</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>🎮 Admin Panel</h1>
+            <div class="user-info">
+                <span id="admin-username">Admin</span>
+                <button id="logout-btn" class="btn btn-secondary">Çıkış</button>
+            </div>
+        </header>
+
+        <nav class="admin-nav">
+            <button class="nav-btn active" data-section="mazes">Labirentler</button>
+            <button class="nav-btn" data-section="stats">İstatistikler</button>
+            <button class="nav-btn" data-section="users">Kullanıcılar</button>
+        </nav>
+
+        <!-- Labirentler Section -->
+        <div id="mazes-section" class="section active">
+            <div class="section-header">
+                <h2>Labirent Yönetimi</h2>
+                <button id="create-maze-btn" class="btn btn-primary">➕ Yeni Labirent</button>
+            </div>
+
+            <div id="mazes-list" class="mazes-grid">
+                <!-- Maze cards will be populated here -->
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div id="stats-section" class="section">
+            <h2>Sistem İstatistikleri</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="stat-users">-</div>
+                    <div class="stat-label">Toplam Kullanıcı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎮</div>
+                    <div class="stat-value" id="stat-sessions">-</div>
+                    <div class="stat-label">Aktif Oturumlar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="stat-rewards">$0</div>
+                    <div class="stat-label">Toplam Ödül</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="stat-transactions">-</div>
+                    <div class="stat-label">İşlem Sayısı</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="users-section" class="section">
+            <h2>Kullanıcı Yönetimi</h2>
+            <p class="placeholder">Yakında...</p>
+        </div>
+    </div>
+
+    <!-- Create/Edit Maze Modal -->
+    <div id="maze-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="maze-modal-title">Yeni Labirent Oluştur</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="maze-form">
+                <div class="form-group">
+                    <label for="maze-name">Labirent Adı</label>
+                    <input type="text" id="maze-name" required placeholder="Örn: Başlangıç Labirenti">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maze-width">Genişlik</label>
+                        <input type="number" id="maze-width" min="3" max="50" value="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maze-height">Yükseklik</label>
+                        <input type="number" id="maze-height" min="3" max="50" value="10" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="maze-portals">Portal Sayısı</label>
+                    <input type="number" id="maze-portals" min="0" max="20" value="5" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="big-reward-chance">Büyük Ödül Şansı (%)</label>
+                        <input type="number" id="big-reward-chance" min="0" max="100" step="0.1" value="1" placeholder="0-100">
+                    </div>
+                    <div class="form-group">
+                        <label for="small-reward-chance">Küçük Ödül Şansı (%)</label>
+                        <input type="number" id="small-reward-chance" min="0" max="100" step="0.1" value="5" placeholder="0-100">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary cancel-btn">İptal</button>
+                    <button type="submit" class="btn btn-primary">Oluştur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

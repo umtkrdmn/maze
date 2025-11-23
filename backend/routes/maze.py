@@ -15,6 +15,63 @@ from schemas import (
 router = APIRouter(prefix="/api/maze", tags=["maze"])
 
 
+@router.get("/list")
+async def list_available_mazes(db: AsyncSession = Depends(get_db)):
+    """Get list of all active mazes for player selection"""
+    from sqlalchemy import select
+    from models.maze import Maze
+
+    result = await db.execute(
+        select(Maze).where(Maze.is_active == True)
+    )
+    mazes = result.scalars().all()
+
+    return {
+        "mazes": [
+            {
+                "id": m.id,
+                "name": m.name,
+                "width": m.width,
+                "height": m.height,
+                "total_rooms": m.width * m.height,
+                "portal_count": m.portal_count
+            }
+            for m in mazes
+        ]
+    }
+
+
+@router.post("/start/{maze_id}", response_model=GameStartResponse)
+async def start_game_with_maze(
+    maze_id: int,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Start a new game session with specific maze"""
+    maze_service = MazeService(db)
+
+    # Get selected maze
+    maze = await maze_service.get_maze(maze_id)
+    if not maze or not maze.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Maze not found or not active"
+        )
+
+    # Start session
+    session = await maze_service.start_game_session(current_user.id, maze.id)
+
+    # Get starting room
+    room = await maze_service.get_room(maze.id, 0, 0)
+    room_data = await maze_service._room_to_dict(room)
+
+    return GameStartResponse(
+        session_token=session.session_token,
+        room=RoomResponse(**room_data),
+        maze_size={"width": maze.width, "height": maze.height}
+    )
+
+
 @router.post("/start", response_model=GameStartResponse)
 async def start_game(
     current_user=Depends(get_current_user),

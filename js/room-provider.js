@@ -166,8 +166,9 @@ class ServerRoomProvider extends RoomProvider {
 
     async getStartPosition() {
         try {
-            // API client'ı kullan
-            const data = await api.startGame();
+            // API client'ı kullan (seçilen maze ID ile)
+            const mazeId = window.selectedMazeId || null;
+            const data = await api.startGame(mazeId);
 
             // Session token sakla
             this.sessionToken = data.session_token;

@@ -126,7 +126,7 @@ class UIManager {
         }
     }
 
-    startOnlineGame() {
+    async startOnlineGame() {
         window.useServerProvider = true;
         // Update balance display
         if (this.currentUser) {
@@ -136,6 +136,72 @@ class UIManager {
                 balanceEl.textContent = `Bakiye: $${this.currentUser.balance.toFixed(2)}`;
             }
         }
+        // Show maze selection screen
+        await this.showMazeSelection();
+    }
+
+    async showMazeSelection() {
+        try {
+            // Fetch available mazes
+            const response = await fetch('http://localhost:7100/api/maze/list');
+            if (!response.ok) throw new Error('Failed to load mazes');
+
+            const data = await response.json();
+            const mazes = data.mazes;
+
+            if (mazes.length === 0) {
+                this.showNotification('Henüz aktif labirent yok', 'error');
+                return;
+            }
+
+            if (mazes.length === 1) {
+                // Only one maze, start directly
+                this.startGameWithMaze(mazes[0].id);
+                return;
+            }
+
+            // Show maze selection modal
+            const modal = document.getElementById('maze-selection-modal');
+            const list = document.getElementById('maze-selection-list');
+
+            list.innerHTML = mazes.map(maze => `
+                <div class="maze-selection-card" onclick="uiManager.startGameWithMaze(${maze.id})">
+                    <h3>${maze.name}</h3>
+                    <div class="maze-selection-info">
+                        <div class="maze-selection-info-item">
+                            <div class="maze-selection-info-label">Boyut</div>
+                            <div class="maze-selection-info-value">${maze.width}×${maze.height}</div>
+                        </div>
+                        <div class="maze-selection-info-item">
+                            <div class="maze-selection-info-label">Toplam Oda</div>
+                            <div class="maze-selection-info-value">${maze.total_rooms}</div>
+                        </div>
+                        <div class="maze-selection-info-item">
+                            <div class="maze-selection-info-label">Portal</div>
+                            <div class="maze-selection-info-value">${maze.portal_count}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary">Başla</button>
+                </div>
+            `).join('');
+
+            modal.style.display = 'flex';
+        } catch (error) {
+            console.error('Error loading mazes:', error);
+            this.showNotification('Labirentler yüklenemedi', 'error');
+        }
+    }
+
+    startGameWithMaze(mazeId) {
+        // Hide maze selection modal
+        const modal = document.getElementById('maze-selection-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        // Store selected maze ID
+        window.selectedMazeId = mazeId;
+
         // Start the game
         if (window.startGame) {
             window.startGame();
