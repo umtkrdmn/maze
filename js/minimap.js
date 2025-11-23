@@ -58,14 +58,25 @@ class Minimap {
             console.log('Minimap draw - Visited rooms:', visitedRooms);
             this._debugLogged = true;
         }
-        const offsetX = (width - this.mazeWidth * this.cellSize) / 2;
-        const offsetY = (height - this.mazeHeight * this.cellSize) / 2;
+
+        // Minimap'i oyuncunun etrafına ortala (viewport)
+        // Canvas'ın merkezine oyuncuyu çiz
+        const viewportCenterX = width / 2;
+        const viewportCenterY = height / 2;
+
+        // Oyuncunun dünya koordinatlarındaki pozisyonu
+        const playerWorldX = this.player.roomX * this.cellSize;
+        const playerWorldY = this.player.roomY * this.cellSize;
+
+        // Offset hesapla - oyuncuyu merkeze getir
+        const offsetX = viewportCenterX - playerWorldX;
+        const offsetY = viewportCenterY - playerWorldY;
 
         for (let room of visitedRooms) {
             this.drawRoom(room, offsetX, offsetY);
         }
 
-        // Oyuncuyu çiz
+        // Oyuncuyu çiz (her zaman merkezde)
         this.drawPlayer(offsetX, offsetY);
     }
 
