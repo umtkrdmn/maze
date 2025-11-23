@@ -144,18 +144,29 @@ class UIManager {
         try {
             // Fetch available mazes
             const response = await fetch('http://localhost:7100/api/maze/list');
-            if (!response.ok) throw new Error('Failed to load mazes');
+
+            console.log('Maze list response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Maze list error:', errorText);
+                throw new Error(`Failed to load mazes: ${response.status} ${errorText}`);
+            }
 
             const data = await response.json();
+            console.log('Mazes loaded:', data);
             const mazes = data.mazes;
 
             if (mazes.length === 0) {
                 this.showNotification('Henüz aktif labirent yok', 'error');
+                // Start offline game as fallback
+                this.startOfflineGame();
                 return;
             }
 
             if (mazes.length === 1) {
                 // Only one maze, start directly
+                console.log('Only 1 maze, starting directly with maze:', mazes[0]);
                 this.startGameWithMaze(mazes[0].id);
                 return;
             }
@@ -188,7 +199,9 @@ class UIManager {
             modal.style.display = 'flex';
         } catch (error) {
             console.error('Error loading mazes:', error);
-            this.showNotification('Labirentler yüklenemedi', 'error');
+            this.showNotification('Labirentler yüklenemedi: ' + error.message, 'error');
+            // Start offline game as fallback
+            this.startOfflineGame();
         }
     }
 
