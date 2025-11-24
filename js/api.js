@@ -102,6 +102,10 @@ class ApiClient {
     }
 
     // Room endpoints
+    async getMyRooms() {
+        return this.request('/api/room/my-rooms');
+    }
+
     async purchaseRoom(roomId) {
         return this.request(`/api/room/${roomId}/purchase`, { method: 'POST' });
     }

@@ -30,6 +30,21 @@ class RoomService:
         )
         return result.scalar_one_or_none()
 
+    async def get_user_rooms(self, user_id: int) -> List[Room]:
+        """Get all rooms owned by a user"""
+        from models.maze import Maze
+        result = await self.db.execute(
+            select(Room)
+            .options(
+                selectinload(Room.design),
+                selectinload(Room.ads),
+                selectinload(Room.maze)
+            )
+            .where(Room.owner_id == user_id)
+            .order_by(Room.sold_at.desc())
+        )
+        return result.scalars().all()
+
     async def purchase_room(self, user: User, room: Room, price: float = None) -> Dict[str, Any]:
         """Purchase a room"""
         if room.is_sold:

@@ -11,6 +11,63 @@ from schemas import RoomDesignUpdate, RoomAdCreate
 router = APIRouter(prefix="/api/room", tags=["room"])
 
 
+@router.get("/my-rooms")
+async def get_my_rooms(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all rooms owned by the current user"""
+    room_service = RoomService(db)
+    rooms = await room_service.get_user_rooms(current_user.id)
+
+    return {
+        "rooms": [
+            {
+                "id": r.id,
+                "x": r.x,
+                "y": r.y,
+                "maze_id": r.maze_id,
+                "maze_name": r.maze.name,
+                "door_north": r.door_north,
+                "door_south": r.door_south,
+                "door_east": r.door_east,
+                "door_west": r.door_west,
+                "has_portal": r.has_portal,
+                "sold_at": r.sold_at.isoformat() if r.sold_at else None,
+                "design": {
+                    "template": r.design.template if r.design else "default",
+                    "wall_color": r.design.wall_color if r.design else "#808080",
+                    "floor_color": r.design.floor_color if r.design else "#6B4E3D",
+                    "ceiling_color": r.design.ceiling_color if r.design else "#EEEEEE",
+                    "ambient_light_color": r.design.ambient_light_color if r.design else "#FFFFFF",
+                    "ambient_light_intensity": r.design.ambient_light_intensity if r.design else 0.5,
+                } if r.design else {
+                    "template": "default",
+                    "wall_color": "#808080",
+                    "floor_color": "#6B4E3D",
+                    "ceiling_color": "#EEEEEE",
+                    "ambient_light_color": "#FFFFFF",
+                    "ambient_light_intensity": 0.5,
+                },
+                "ads": [
+                    {
+                        "id": ad.id,
+                        "wall": ad.wall,
+                        "ad_type": ad.ad_type,
+                        "content_url": ad.content_url,
+                        "content_text": ad.content_text,
+                        "click_url": ad.click_url,
+                        "is_active": ad.is_active
+                    }
+                    for ad in r.ads if ad.is_active
+                ]
+            }
+            for r in rooms
+        ],
+        "count": len(rooms)
+    }
+
+
 @router.post("/{room_id}/purchase")
 async def purchase_room(
     room_id: int,

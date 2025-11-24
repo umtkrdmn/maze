@@ -5,6 +5,7 @@ class UIManager {
         this.isLoggedIn = false;
         this.isRegisterMode = false;
         this.currentUser = null;
+        this.myRoomsManager = null;
 
         this.initAuthUI();
         this.initGameUI();
@@ -678,7 +679,19 @@ class UIManager {
     }
 
     showMyRooms() {
-        this.showNotification('Odalarım özelliği yakında!', 'info');
+        // Initialize MyRoomsManager if not already done
+        if (!this.myRoomsManager) {
+            try {
+                this.myRoomsManager = new MyRoomsManager(api);
+            } catch (error) {
+                console.error('Failed to initialize MyRoomsManager:', error);
+                this.showNotification('Odalarım özelliği yüklenemedi!', 'error');
+                return;
+            }
+        }
+
+        // Open the My Rooms modal
+        this.myRoomsManager.open();
     }
 
     showRoomShop() {
