@@ -56,8 +56,8 @@ class MyRoomsManager {
         // Close button
         document.getElementById('my-rooms-close')?.addEventListener('click', () => this.close());
 
-        // Back to main menu button
-        document.getElementById('my-rooms-back')?.addEventListener('click', () => this.backToMainMenu());
+        // Back to maze selection button
+        document.getElementById('my-rooms-back')?.addEventListener('click', () => this.backToMazeSelection());
 
         // Purchase new room button
         document.getElementById('purchase-new-room')?.addEventListener('click', () => this.startPurchaseFlow());
@@ -638,12 +638,12 @@ class MyRoomsManager {
         this.cancelEdit();
     }
 
-    backToMainMenu() {
+    backToMazeSelection() {
         this.close();
-        // Show main menu if it exists (standalone mode)
-        const mainMenu = document.getElementById('main-menu-modal');
-        if (mainMenu) {
-            mainMenu.style.display = 'flex';
+        // Show maze selection modal
+        const mazeSelection = document.getElementById('maze-selection-modal');
+        if (mazeSelection) {
+            mazeSelection.style.display = 'flex';
         }
     }
 

@@ -137,40 +137,27 @@ class UIManager {
                 balanceEl.textContent = `Bakiye: $${this.currentUser.balance.toFixed(2)}`;
             }
         }
-        // Show main menu instead of directly going to maze selection
-        this.showMainMenu();
+        // Show maze selection directly
+        await this.showMazeSelection();
     }
 
-    showMainMenu() {
-        const mainMenu = document.getElementById('main-menu-modal');
-        if (!mainMenu) return;
+    bindMazeSelectionEvents() {
+        // Bind events only once
+        if (this.mazeSelectionBound) return;
 
-        mainMenu.style.display = 'flex';
+        // Manage Rooms button
+        document.getElementById('maze-manage-rooms')?.addEventListener('click', () => {
+            document.getElementById('maze-selection-modal').style.display = 'none';
+            this.showMyRooms();
+        });
 
-        // Bind main menu events (only once)
-        if (!this.mainMenuBound) {
-            document.getElementById('main-menu-play')?.addEventListener('click', () => {
-                mainMenu.style.display = 'none';
-                this.showMazeSelection();
-            });
+        // Logout link
+        document.getElementById('maze-logout')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.logout();
+        });
 
-            document.getElementById('main-menu-rooms')?.addEventListener('click', () => {
-                mainMenu.style.display = 'none';
-                this.showMyRooms();
-            });
-
-            document.getElementById('main-menu-logout')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.logout();
-            });
-
-            document.getElementById('maze-back-to-menu')?.addEventListener('click', () => {
-                document.getElementById('maze-selection-modal').style.display = 'none';
-                mainMenu.style.display = 'flex';
-            });
-
-            this.mainMenuBound = true;
-        }
+        this.mazeSelectionBound = true;
     }
 
     logout() {
@@ -179,7 +166,6 @@ class UIManager {
         this.currentUser = null;
 
         // Hide all modals
-        document.getElementById('main-menu-modal').style.display = 'none';
         document.getElementById('my-rooms-modal').style.display = 'none';
         document.getElementById('maze-selection-modal').style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
@@ -214,13 +200,6 @@ class UIManager {
                 return;
             }
 
-            if (mazes.length === 1) {
-                // Only one maze, start directly
-                console.log('Only 1 maze, starting directly with maze:', mazes[0]);
-                this.startGameWithMaze(mazes[0].id);
-                return;
-            }
-
             // Show maze selection modal
             const modal = document.getElementById('maze-selection-modal');
             const list = document.getElementById('maze-selection-list');
@@ -243,6 +222,9 @@ class UIManager {
             `).join('');
 
             modal.style.display = 'flex';
+
+            // Bind maze selection events (only once)
+            this.bindMazeSelectionEvents();
         } catch (error) {
             console.error('Error loading mazes:', error);
             this.showNotification('Labirentler yüklenemedi: ' + error.message, 'error');
