@@ -18,6 +18,7 @@
 
         <nav class="admin-nav">
             <button class="nav-btn active" data-section="mazes">Labirentler</button>
+            <button class="nav-btn" data-section="map">Harita</button>
             <button class="nav-btn" data-section="stats">İstatistikler</button>
             <button class="nav-btn" data-section="users">Kullanıcılar</button>
         </nav>
@@ -31,6 +32,24 @@
 
             <div id="mazes-list" class="mazes-grid">
                 <!-- Maze cards will be populated here -->
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div id="map-section" class="section">
+            <div class="section-header">
+                <h2>Labirent Haritası</h2>
+                <select id="map-maze-select" class="maze-select">
+                    <option value="">Labirent Seçin</option>
+                </select>
+            </div>
+
+            <div class="map-container">
+                <canvas id="admin-map-canvas"></canvas>
+                <div id="room-details" class="room-details">
+                    <h3>Oda Detayları</h3>
+                    <p>Harita üzerinde bir odaya tıklayın</p>
+                </div>
             </div>
         </div>
 
@@ -83,16 +102,16 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="maze-width">Genişlik</label>
-                        <input type="number" id="maze-width" min="3" max="50" value="10" required>
+                        <input type="number" id="maze-width" min="3" max="1000" value="10" required>
                     </div>
                     <div class="form-group">
                         <label for="maze-height">Yükseklik</label>
-                        <input type="number" id="maze-height" min="3" max="50" value="10" required>
+                        <input type="number" id="maze-height" min="3" max="1000" value="10" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="maze-portals">Portal Sayısı</label>
-                    <input type="number" id="maze-portals" min="0" max="20" value="5" required>
+                    <input type="number" id="maze-portals" min="0" max="10000" value="5" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -114,6 +133,7 @@
 
     <!-- Scripts -->
     <script src="js/api.js"></script>
+    <script src="js/admin-map.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

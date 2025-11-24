@@ -49,6 +49,18 @@ class RoomService:
         room.is_sold = True
         room.sold_at = datetime.utcnow()
 
+        # Create default design if it doesn't exist (lazy loading)
+        if not room.design:
+            design = RoomDesign(
+                room_id=room.id,
+                template="default",
+                wall_color="#808080",
+                floor_color="#6B4E3D",
+                ceiling_color="#EEEEEE",
+                ambient_light_intensity=0.5
+            )
+            self.db.add(design)
+
         # Create transaction
         transaction = Transaction(
             user_id=user.id,
@@ -262,6 +274,16 @@ class RoomService:
         result = await self.db.execute(
             select(Room)
             .where(and_(Room.maze_id == maze_id, Room.is_sold == False))
+        )
+        return result.scalars().all()
+
+    async def get_all_rooms(self, maze_id: int) -> List[Room]:
+        """Get all rooms in a maze (for admin use)"""
+        result = await self.db.execute(
+            select(Room)
+            .options(selectinload(Room.design))
+            .where(Room.maze_id == maze_id)
+            .order_by(Room.x, Room.y)
         )
         return result.scalars().all()
 

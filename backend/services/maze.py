@@ -53,28 +53,31 @@ class MazeService:
         # Generate doors (ensure connectivity)
         await self._generate_doors(rooms, width, height)
 
-        # Generate random designs for all rooms
-        for room in rooms:
-            design = self._generate_random_design(room.id)
-            self.db.add(design)
-
-            # Generate ads for walls without doors
-            await self._generate_random_ads(room)
-
         # Add portals
         await self._add_portals(maze.id, rooms, portal_count)
+
+        # Note: Room designs and ads are now created lazily when rooms are purchased
+        # This significantly reduces database size and maze creation time
 
         await self.db.commit()
         await self.db.refresh(maze)
         return maze
 
     async def _generate_doors(self, rooms: List[Room], width: int, height: int):
-        """Generate doors using DFS to ensure all rooms are connected"""
+        """Generate doors using iterative DFS to ensure all rooms are connected"""
         room_map = {(r.x, r.y): r for r in rooms}
         visited = set()
 
-        def dfs(x: int, y: int):
-            """Depth-first search to create a spanning tree"""
+        # Iterative DFS using explicit stack
+        stack = [(0, 0)]  # Start from (0, 0)
+
+        while stack:
+            x, y = stack[-1]  # Peek at top of stack
+
+            if (x, y) in visited:
+                stack.pop()
+                continue
+
             visited.add((x, y))
             room = room_map.get((x, y))
 
@@ -89,6 +92,7 @@ class MazeService:
             # Shuffle for randomness
             random.shuffle(directions)
 
+            found_unvisited = False
             for direction, dx, dy, opposite in directions:
                 nx, ny = x + dx, y + dy
 
@@ -104,11 +108,13 @@ class MazeService:
                 setattr(room, f'door_{direction}', True)
                 setattr(neighbor, f'door_{opposite}', True)
 
-                # Recursively visit neighbor
-                dfs(nx, ny)
+                # Add neighbor to stack for exploration
+                stack.append((nx, ny))
+                found_unvisited = True
+                break  # Process one neighbor at a time (DFS behavior)
 
-        # Start DFS from (0, 0)
-        dfs(0, 0)
+            if not found_unvisited:
+                stack.pop()  # Backtrack if no unvisited neighbors
 
         # Add extra doors for loops (30% chance per unconnected edge)
         for room in rooms:

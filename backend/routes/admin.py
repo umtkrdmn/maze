@@ -4,11 +4,14 @@ from sqlalchemy import select
 
 from database import get_db
 from services.maze import MazeService
+from services.room import RoomService
 from services.reward import RewardService
 from services.trap import TrapService
 from routes.auth import get_current_user
 from schemas import MazeCreate
 from models.maze import Maze
+from models.reward import Reward
+from models.trap import Trap
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -255,4 +258,78 @@ async def get_stats(
         "active_sessions": active_sessions,
         "total_rewards_claimed": round(total_rewards, 2),
         "total_transactions": transaction_count
+    }
+
+
+@router.get("/maze/{maze_id}/rooms")
+async def get_maze_rooms(
+    maze_id: int,
+    admin_user=Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all rooms in a maze for map visualization"""
+    # Verify maze exists
+    result = await db.execute(select(Maze).where(Maze.id == maze_id))
+    maze = result.scalar_one_or_none()
+
+    if not maze:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Maze not found"
+        )
+
+    # Get all rooms
+    room_service = RoomService(db)
+    rooms = await room_service.get_all_rooms(maze_id)
+
+    # Get active rewards and traps
+    rewards_result = await db.execute(
+        select(Reward).where(
+            Reward.maze_id == maze_id,
+            Reward.is_claimed == False,
+            Reward.is_expired == False
+        )
+    )
+    rewards = rewards_result.scalars().all()
+
+    traps_result = await db.execute(
+        select(Trap).where(Trap.maze_id == maze_id, Trap.is_active == True)
+    )
+    traps = traps_result.scalars().all()
+
+    # Create reward and trap lookup
+    reward_positions = {(r.room_x, r.room_y): r.reward_type for r in rewards}
+    trap_positions = {(t.room_x, t.room_y): t.trap_type for t in traps}
+
+    # Format room data
+    room_data = []
+    for room in rooms:
+        data = {
+            "id": room.id,
+            "x": room.x,
+            "y": room.y,
+            "doors": {
+                "north": room.door_north,
+                "south": room.door_south,
+                "east": room.door_east,
+                "west": room.door_west
+            },
+            "is_sold": room.is_sold,
+            "owner_id": room.owner_id,
+            "has_portal": room.has_portal,
+            "has_reward": (room.x, room.y) in reward_positions,
+            "reward_type": reward_positions.get((room.x, room.y)),
+            "has_trap": (room.x, room.y) in trap_positions,
+            "trap_type": trap_positions.get((room.x, room.y))
+        }
+        room_data.append(data)
+
+    return {
+        "maze": {
+            "id": maze.id,
+            "name": maze.name,
+            "width": maze.width,
+            "height": maze.height
+        },
+        "rooms": room_data
     }

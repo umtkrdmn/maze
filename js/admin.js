@@ -4,6 +4,7 @@ class AdminPanel {
     constructor() {
         this.currentSection = 'mazes';
         this.mazes = [];
+        this.adminMap = null;
 
         this.init();
     }
@@ -14,6 +15,9 @@ class AdminPanel {
             window.location.href = 'index.html';
             return;
         }
+
+        // Initialize admin map
+        this.adminMap = new AdminMap('admin-map-canvas');
 
         this.setupEventListeners();
         this.loadMazes();
@@ -52,6 +56,19 @@ class AdminPanel {
             api.logout();
             window.location.href = 'index.html';
         });
+
+        // Map maze selector
+        document.getElementById('map-maze-select').addEventListener('change', (e) => {
+            const mazeId = parseInt(e.target.value);
+            if (mazeId) {
+                this.loadMapData(mazeId);
+            }
+        });
+
+        // Room selection event
+        window.addEventListener('roomSelected', (e) => {
+            this.showRoomDetails(e.detail);
+        });
     }
 
     switchSection(section) {
@@ -74,6 +91,8 @@ class AdminPanel {
         // Load section data
         if (section === 'stats') {
             this.loadStats();
+        } else if (section === 'map') {
+            this.populateMapMazeSelect();
         }
     }
 
@@ -90,6 +109,11 @@ class AdminPanel {
             const data = await response.json();
             this.mazes = data.mazes;
             this.renderMazes();
+
+            // Update map select if in map section
+            if (this.currentSection === 'map') {
+                this.populateMapMazeSelect();
+            }
         } catch (error) {
             console.error('Error loading mazes:', error);
             this.showError('Labirentler yüklenemedi');
@@ -285,6 +309,102 @@ class AdminPanel {
         } catch (error) {
             console.error('Error loading stats:', error);
         }
+    }
+
+    populateMapMazeSelect() {
+        const select = document.getElementById('map-maze-select');
+
+        // Clear existing options except first
+        select.innerHTML = '<option value="">Labirent Seçin</option>';
+
+        // Add mazes
+        this.mazes.forEach(maze => {
+            const option = document.createElement('option');
+            option.value = maze.id;
+            option.textContent = `${maze.name} (${maze.width}×${maze.height})`;
+            if (maze.is_active) {
+                option.textContent += ' ✓';
+            }
+            select.appendChild(option);
+        });
+
+        // Auto-select active maze
+        const activeMaze = this.mazes.find(m => m.is_active);
+        if (activeMaze) {
+            select.value = activeMaze.id;
+            this.loadMapData(activeMaze.id);
+        }
+    }
+
+    async loadMapData(mazeId) {
+        try {
+            const response = await fetch(`http://localhost:7100/api/admin/maze/${mazeId}/rooms`, {
+                headers: {
+                    'Authorization': `Bearer ${api.token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to load map data');
+
+            const data = await response.json();
+
+            console.log('Map data loaded:', data);
+
+            // Set maze data to admin map
+            this.adminMap.setMazeData(data.maze, data.rooms);
+
+            // Reset room details
+            document.getElementById('room-details').innerHTML = `
+                <h3>Oda Detayları</h3>
+                <p>Harita üzerinde bir odaya tıklayın</p>
+            `;
+        } catch (error) {
+            console.error('Error loading map data:', error);
+            this.showError('Harita yüklenemedi: ' + error.message);
+        }
+    }
+
+    showRoomDetails(room) {
+        const detailsDiv = document.getElementById('room-details');
+
+        const statusBadges = [];
+        if (room.is_sold) statusBadges.push('<span class="badge badge-blue">Satılmış</span>');
+        if (room.has_portal) statusBadges.push('<span class="badge badge-purple">Portal</span>');
+        if (room.has_reward) statusBadges.push(`<span class="badge badge-gold">Ödül (${room.reward_type})</span>`);
+        if (room.has_trap) statusBadges.push(`<span class="badge badge-red">Tuzak (${room.trap_type})</span>`);
+        if (!room.is_sold && !room.has_portal && !room.has_reward && !room.has_trap) {
+            statusBadges.push('<span class="badge badge-gray">Boş</span>');
+        }
+
+        const doors = [];
+        if (room.doors.north) doors.push('Kuzey');
+        if (room.doors.south) doors.push('Güney');
+        if (room.doors.east) doors.push('Doğu');
+        if (room.doors.west) doors.push('Batı');
+
+        detailsDiv.innerHTML = `
+            <h3>Oda Detayları</h3>
+            <div class="room-detail-grid">
+                <div class="room-detail-item">
+                    <strong>Koordinatlar:</strong> (${room.x}, ${room.y})
+                </div>
+                <div class="room-detail-item">
+                    <strong>Oda ID:</strong> ${room.id}
+                </div>
+                <div class="room-detail-item">
+                    <strong>Durum:</strong><br>
+                    ${statusBadges.join(' ')}
+                </div>
+                <div class="room-detail-item">
+                    <strong>Kapılar:</strong> ${doors.length > 0 ? doors.join(', ') : 'Yok'}
+                </div>
+                ${room.owner_id ? `
+                    <div class="room-detail-item">
+                        <strong>Sahip ID:</strong> ${room.owner_id}
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     showSuccess(message) {
