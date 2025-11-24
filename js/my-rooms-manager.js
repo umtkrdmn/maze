@@ -8,6 +8,7 @@ class MyRoomsManager {
         this.currentUser = null;
         this.selectedRoom = null;
         this.templates = [];
+        this.initialized = false;
 
         // Purchase flow state
         this.purchaseState = {
@@ -16,48 +17,50 @@ class MyRoomsManager {
             ads: {}
         };
 
-        this.init();
-    }
-
-    async init() {
-        // Get current user info
-        try {
-            this.currentUser = await this.api.getMe();
-        } catch (error) {
-            console.error('Failed to get user info:', error);
-            return;
-        }
-
-        // Initialize UI elements
+        // Initialize UI elements immediately
         this.modal = document.getElementById('my-rooms-modal');
         this.canvas = document.getElementById('my-rooms-canvas');
         this.roomsList = document.getElementById('my-rooms-list');
         this.balanceElement = document.getElementById('my-rooms-balance');
         this.loadingMessage = document.getElementById('my-rooms-loading');
-
-        // Purchase flow elements
         this.purchaseFlow = document.getElementById('purchase-flow');
         this.editFlow = document.getElementById('edit-flow');
 
-        // Initialize RoomPreview
-        this.roomPreview = new RoomPreview(this.canvas);
-
-        // Bind event listeners
+        // Bind event listeners immediately
         this.bindEvents();
+    }
 
-        // Load templates
-        await this.loadTemplates();
+    async init() {
+        if (this.initialized) return;
 
-        // Load user's rooms
-        await this.loadMyRooms();
+        try {
+            // Initialize RoomPreview if not already done
+            if (!this.roomPreview) {
+                this.roomPreview = new RoomPreview(this.canvas);
+            }
+
+            // Get current user info
+            this.currentUser = await this.api.getMe();
+
+            // Load templates
+            await this.loadTemplates();
+
+            this.initialized = true;
+        } catch (error) {
+            console.error('Failed to initialize MyRoomsManager:', error);
+            throw error;
+        }
     }
 
     bindEvents() {
         // Close button
-        document.getElementById('my-rooms-close').addEventListener('click', () => this.close());
+        document.getElementById('my-rooms-close')?.addEventListener('click', () => this.close());
+
+        // Back to main menu button
+        document.getElementById('my-rooms-back')?.addEventListener('click', () => this.backToMainMenu());
 
         // Purchase new room button
-        document.getElementById('purchase-new-room').addEventListener('click', () => this.startPurchaseFlow());
+        document.getElementById('purchase-new-room')?.addEventListener('click', () => this.startPurchaseFlow());
 
         // Purchase flow: Door selection
         document.querySelectorAll('.door-option').forEach(btn => {
@@ -608,20 +611,40 @@ class MyRoomsManager {
         }, 3000);
     }
 
-    open() {
-        this.modal.style.display = 'flex';
-        this.loadMyRooms();
+    async open() {
+        try {
+            // Initialize if not already done
+            await this.init();
 
-        // Update user balance
-        this.api.getMe().then(user => {
-            this.currentUser = user;
-            this.updateBalance(user.balance);
-        });
+            // Show modal
+            this.modal.style.display = 'flex';
+
+            // Load rooms and update balance
+            await this.loadMyRooms();
+
+            // Update user balance
+            this.api.getMe().then(user => {
+                this.currentUser = user;
+                this.updateBalance(user.balance);
+            });
+        } catch (error) {
+            console.error('Failed to open My Rooms:', error);
+            this.showNotification('Odalarım ekranı açılamadı!', 'error');
+        }
     }
 
     close() {
         this.modal.style.display = 'none';
         this.cancelEdit();
+    }
+
+    backToMainMenu() {
+        this.close();
+        // Show main menu if it exists (standalone mode)
+        const mainMenu = document.getElementById('main-menu-modal');
+        if (mainMenu) {
+            mainMenu.style.display = 'flex';
+        }
     }
 
     destroy() {

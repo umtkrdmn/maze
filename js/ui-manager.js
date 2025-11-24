@@ -137,8 +137,57 @@ class UIManager {
                 balanceEl.textContent = `Bakiye: $${this.currentUser.balance.toFixed(2)}`;
             }
         }
-        // Show maze selection screen
-        await this.showMazeSelection();
+        // Show main menu instead of directly going to maze selection
+        this.showMainMenu();
+    }
+
+    showMainMenu() {
+        const mainMenu = document.getElementById('main-menu-modal');
+        if (!mainMenu) return;
+
+        mainMenu.style.display = 'flex';
+
+        // Bind main menu events (only once)
+        if (!this.mainMenuBound) {
+            document.getElementById('main-menu-play')?.addEventListener('click', () => {
+                mainMenu.style.display = 'none';
+                this.showMazeSelection();
+            });
+
+            document.getElementById('main-menu-rooms')?.addEventListener('click', () => {
+                mainMenu.style.display = 'none';
+                this.showMyRooms();
+            });
+
+            document.getElementById('main-menu-logout')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.logout();
+            });
+
+            document.getElementById('maze-back-to-menu')?.addEventListener('click', () => {
+                document.getElementById('maze-selection-modal').style.display = 'none';
+                mainMenu.style.display = 'flex';
+            });
+
+            this.mainMenuBound = true;
+        }
+    }
+
+    logout() {
+        api.clearToken();
+        this.isLoggedIn = false;
+        this.currentUser = null;
+
+        // Hide all modals
+        document.getElementById('main-menu-modal').style.display = 'none';
+        document.getElementById('my-rooms-modal').style.display = 'none';
+        document.getElementById('maze-selection-modal').style.display = 'none';
+        document.getElementById('game-container').style.display = 'none';
+
+        // Show auth modal
+        document.getElementById('auth-modal').style.display = 'flex';
+
+        this.showNotification('Çıkış yapıldı', 'info');
     }
 
     async showMazeSelection() {
@@ -678,7 +727,7 @@ class UIManager {
         return div.innerHTML;
     }
 
-    showMyRooms() {
+    async showMyRooms() {
         // Initialize MyRoomsManager if not already done
         if (!this.myRoomsManager) {
             try {
@@ -691,7 +740,12 @@ class UIManager {
         }
 
         // Open the My Rooms modal
-        this.myRoomsManager.open();
+        try {
+            await this.myRoomsManager.open();
+        } catch (error) {
+            console.error('Failed to open MyRoomsManager:', error);
+            this.showNotification('Odalarım ekranı açılamadı!', 'error');
+        }
     }
 
     showRoomShop() {
