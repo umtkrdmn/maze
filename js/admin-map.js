@@ -14,6 +14,16 @@ class AdminMap {
         this.mazeData = null;
         this.selectedRoom = null;
 
+        // Zoom and pan properties
+        this.zoom = 1.0;
+        this.minZoom = 0.1;
+        this.maxZoom = 5.0;
+        this.panX = 0;
+        this.panY = 0;
+        this.isPanning = false;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+
         // Canvas boyutlarını ayarla
         this.canvas.width = 800;
         this.canvas.height = 600;
@@ -21,32 +31,41 @@ class AdminMap {
         // Mouse event listeners
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
 
-        console.log('AdminMap initialized');
+        console.log('AdminMap initialized with zoom controls');
     }
 
     setMazeData(mazeData, rooms) {
         this.mazeData = mazeData;
         this.rooms = rooms;
 
+        // Reset zoom and pan
+        this.zoom = 1.0;
+        this.panX = 0;
+        this.panY = 0;
+
         // Cell size'ı dinamik hesapla
         const padding = 40;
         const availableWidth = this.canvas.width - padding * 2;
         const availableHeight = this.canvas.height - padding * 2;
-        this.cellSize = Math.min(
+        this.baseCellSize = Math.min(
             Math.floor(availableWidth / mazeData.width),
             Math.floor(availableHeight / mazeData.height)
         );
 
         // Harita offsetlerini hesapla (merkeze hizala)
-        this.offsetX = (this.canvas.width - mazeData.width * this.cellSize) / 2;
-        this.offsetY = (this.canvas.height - mazeData.height * this.cellSize) / 2;
+        this.baseOffsetX = (this.canvas.width - mazeData.width * this.baseCellSize) / 2;
+        this.baseOffsetY = (this.canvas.height - mazeData.height * this.baseCellSize) / 2;
 
         console.log('Maze data loaded:', {
             maze: mazeData.name,
             size: `${mazeData.width}x${mazeData.height}`,
             rooms: rooms.length,
-            cellSize: this.cellSize
+            baseCellSize: this.baseCellSize
         });
 
         this.draw();
@@ -59,16 +78,21 @@ class AdminMap {
 
         const ctx = this.ctx;
 
+        // Apply zoom and pan transformations
+        this.cellSize = this.baseCellSize * this.zoom;
+        this.offsetX = this.baseOffsetX * this.zoom + this.panX;
+        this.offsetY = this.baseOffsetY * this.zoom + this.panY;
+
         // Temizle
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Başlık
+        // Başlık ve zoom info
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(
-            `${this.mazeData.name} - ${this.mazeData.width}x${this.mazeData.height}`,
+            `${this.mazeData.name} - ${this.mazeData.width}x${this.mazeData.height} (Zoom: ${(this.zoom * 100).toFixed(0)}%)`,
             this.canvas.width / 2,
             20
         );
@@ -78,8 +102,9 @@ class AdminMap {
             this.drawRoom(room);
         }
 
-        // Legend (açıklama)
+        // Legend (açıklama) ve kontroller
         this.drawLegend();
+        this.drawControls();
     }
 
     drawRoom(room) {
@@ -273,6 +298,19 @@ class AdminMap {
         const mouseX = (event.clientX - rect.left) * scaleX;
         const mouseY = (event.clientY - rect.top) * scaleY;
 
+        // Panning
+        if (this.isPanning) {
+            const dx = mouseX - this.lastMouseX;
+            const dy = mouseY - this.lastMouseY;
+            this.panX += dx;
+            this.panY += dy;
+            this.lastMouseX = mouseX;
+            this.lastMouseY = mouseY;
+            this.draw();
+            this.canvas.style.cursor = 'grabbing';
+            return;
+        }
+
         // Mouse altındaki odayı kontrol et
         let isOverRoom = false;
         for (let room of this.rooms) {
@@ -287,7 +325,71 @@ class AdminMap {
             }
         }
 
-        this.canvas.style.cursor = isOverRoom ? 'pointer' : 'default';
+        this.canvas.style.cursor = isOverRoom ? 'pointer' : 'grab';
+    }
+
+    handleMouseDown(event) {
+        if (!this.mazeData) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        this.isPanning = true;
+        this.lastMouseX = (event.clientX - rect.left) * scaleX;
+        this.lastMouseY = (event.clientY - rect.top) * scaleY;
+        this.canvas.style.cursor = 'grabbing';
+    }
+
+    handleMouseUp(event) {
+        this.isPanning = false;
+        this.canvas.style.cursor = 'grab';
+    }
+
+    handleWheel(event) {
+        if (!this.mazeData) return;
+
+        event.preventDefault();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        // Mouse position in canvas coordinates
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
+
+        // Zoom factor
+        const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+        const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * zoomFactor));
+
+        // Calculate zoom point offset
+        const zoomPointX = (mouseX - this.panX) / this.zoom;
+        const zoomPointY = (mouseY - this.panY) / this.zoom;
+
+        // Apply new zoom
+        this.zoom = newZoom;
+
+        // Adjust pan to keep zoom point in place
+        this.panX = mouseX - zoomPointX * this.zoom;
+        this.panY = mouseY - zoomPointY * this.zoom;
+
+        this.draw();
+    }
+
+    drawControls() {
+        const ctx = this.ctx;
+
+        // Zoom controls info (bottom right)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(this.canvas.width - 200, this.canvas.height - 80, 190, 70);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('🖱️ Scroll: Zoom In/Out', this.canvas.width - 190, this.canvas.height - 55);
+        ctx.fillText('🖱️ Drag: Pan (Move)', this.canvas.width - 190, this.canvas.height - 35);
+        ctx.fillText('🖱️ Click: Select Room', this.canvas.width - 190, this.canvas.height - 15);
     }
 
     showRoomDetails(room) {
