@@ -190,9 +190,11 @@ class MyRoomsManager {
         this.roomPreview.renderRoom(room, room.design);
     }
 
-    startPurchaseFlow() {
+    async startPurchaseFlow() {
         // Reset purchase state
         this.purchaseState = {
+            mazeId: null,
+            selectedRoom: null,
             doorCount: null,
             selectedTemplate: 'default',
             ads: {}
@@ -208,11 +210,68 @@ class MyRoomsManager {
             card.classList.remove('active');
         });
 
-        // Show door selection step
-        this.showStep('doors');
+        // Show maze selection step
+        this.showStep('maze');
+        await this.renderMazeSelection();
     }
 
-    selectDoorCount(doorCount) {
+    async renderMazeSelection() {
+        const container = document.getElementById('purchase-mazes');
+        container.innerHTML = '<p style="text-align: center; color: #888;">Yükleniyor...</p>';
+
+        try {
+            const response = await fetch('http://localhost:7100/api/maze/list');
+            const data = await response.json();
+            const mazes = data.mazes || [];
+
+            if (mazes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #888;">Aktif labirent bulunamadı</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            mazes.forEach(maze => {
+                const option = document.createElement('div');
+                option.className = 'template-option';
+
+                option.innerHTML = `
+                    <div class="template-icon">🏰</div>
+                    <div class="template-info">
+                        <div class="template-name">${maze.name}</div>
+                        <div class="template-desc">${maze.width}×${maze.height} - ${maze.total_rooms} oda</div>
+                    </div>
+                `;
+
+                option.addEventListener('click', () => {
+                    this.selectMaze(maze.id, maze.name);
+                });
+
+                container.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load mazes:', error);
+            container.innerHTML = '<p style="text-align: center; color: #f44336;">Labirentler yüklenemedi</p>';
+        }
+    }
+
+    selectMaze(mazeId, mazeName) {
+        this.purchaseState.mazeId = mazeId;
+        this.purchaseState.mazeName = mazeName;
+
+        // Update UI
+        document.querySelectorAll('#purchase-mazes .template-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+
+        // Move to door selection
+        setTimeout(() => {
+            this.showStep('doors');
+        }, 300);
+    }
+
+    async selectDoorCount(doorCount) {
         this.purchaseState.doorCount = doorCount;
 
         // Update UI
@@ -221,14 +280,31 @@ class MyRoomsManager {
         });
         document.querySelector(`.door-option[data-doors="${doorCount}"]`)?.classList.add('selected');
 
-        // Move to design selection
-        setTimeout(() => {
-            this.showStep('design');
-            this.renderTemplateSelection();
-        }, 300);
+        try {
+            // Find available room from backend
+            const room = await this.api.findAvailableRoom(this.purchaseState.mazeId, doorCount);
+            this.purchaseState.selectedRoom = room;
+
+            // Preview the room
+            this.previewPurchaseRoom();
+
+            // Move to design selection
+            setTimeout(() => {
+                this.showStep('design');
+                this.renderTemplateSelection();
+            }, 300);
+        } catch (error) {
+            console.error('Failed to find available room:', error);
+            this.showNotification(`${doorCount} kapılı uygun oda bulunamadı!`, 'error');
+            // Deselect
+            document.querySelector(`.door-option[data-doors="${doorCount}"]`)?.classList.remove('selected');
+            this.purchaseState.doorCount = null;
+            this.purchaseState.selectedRoom = null;
+        }
     }
 
     showStep(step) {
+        document.getElementById('step-maze').style.display = step === 'maze' ? 'block' : 'none';
         document.getElementById('step-doors').style.display = step === 'doors' ? 'block' : 'none';
         document.getElementById('step-design').style.display = step === 'design' ? 'block' : 'none';
         document.getElementById('step-ads').style.display = step === 'ads' ? 'block' : 'none';
@@ -308,19 +384,21 @@ class MyRoomsManager {
     }
 
     previewPurchaseRoom() {
-        // Create a mock room with selected configuration
-        const mockRoom = {
-            door_north: this.purchaseState.doorCount >= 1,
-            door_south: this.purchaseState.doorCount >= 2,
-            door_east: this.purchaseState.doorCount >= 3,
-            door_west: this.purchaseState.doorCount >= 4,
+        if (!this.purchaseState.selectedRoom) return;
+
+        // Use the actual room from backend
+        const room = {
+            door_north: this.purchaseState.selectedRoom.door_north,
+            door_south: this.purchaseState.selectedRoom.door_south,
+            door_east: this.purchaseState.selectedRoom.door_east,
+            door_west: this.purchaseState.selectedRoom.door_west,
             ads: []
         };
 
         // Get template design (simplified)
         const design = this.getTemplateDesign(this.purchaseState.selectedTemplate);
 
-        this.roomPreview.renderRoom(mockRoom, design);
+        this.roomPreview.renderRoom(room, design);
     }
 
     getTemplateDesign(templateName) {
@@ -342,9 +420,38 @@ class MyRoomsManager {
     }
 
     async completePurchase() {
-        // This is a placeholder - actual purchase requires selecting an available room
-        alert('Satın alma özelliği için önce aktif bir labirentte oyun oynamalısınız. Oyun sırasında boş odaları satın alabilirsiniz.');
-        this.close();
+        if (!this.purchaseState.selectedRoom) {
+            this.showNotification('Lütfen önce bir oda seçin!', 'error');
+            return;
+        }
+
+        try {
+            // Purchase the room
+            const result = await this.api.purchaseRoom(this.purchaseState.selectedRoom.room_id);
+
+            if (result.success) {
+                // Apply the selected template
+                await this.api.applyTemplate(this.purchaseState.selectedRoom.room_id, this.purchaseState.selectedTemplate);
+
+                // Update balance
+                this.updateBalance(result.new_balance);
+                this.currentUser.balance = result.new_balance;
+
+                this.showNotification('Oda başarıyla satın alındı!', 'success');
+
+                // Reload rooms list
+                await this.loadMyRooms();
+
+                // Close purchase flow
+                this.purchaseFlow.style.display = 'none';
+                this.editFlow.style.display = 'none';
+                this.loadingMessage.style.display = 'block';
+                this.loadingMessage.innerHTML = '<p>Yeni odanız başarıyla eklendi!</p>';
+            }
+        } catch (error) {
+            console.error('Failed to purchase room:', error);
+            this.showNotification('Oda satın alınamadı: ' + error.message, 'error');
+        }
     }
 
     showEditFlow(room) {

@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
+import random
 
 from models.maze import Room, RoomDesign, RoomAd, RoomTemplate
 from models.user import User
@@ -44,6 +45,32 @@ class RoomService:
             .order_by(Room.sold_at.desc())
         )
         return result.scalars().all()
+
+    async def find_random_room_by_doors(self, maze_id: int, door_count: int) -> Optional[Room]:
+        """Find a random available room with the specified number of doors"""
+        # Build query for rooms with exact door count
+        # Count doors: door_north + door_south + door_east + door_west = door_count
+        result = await self.db.execute(
+            select(Room)
+            .where(
+                and_(
+                    Room.maze_id == maze_id,
+                    Room.is_sold == False,
+                    # Cast booleans to int and sum them
+                    (Room.door_north.cast(func.int()) +
+                     Room.door_south.cast(func.int()) +
+                     Room.door_east.cast(func.int()) +
+                     Room.door_west.cast(func.int())) == door_count
+                )
+            )
+        )
+        rooms = result.scalars().all()
+
+        if not rooms:
+            return None
+
+        # Return a random room from the available ones
+        return random.choice(rooms)
 
     async def purchase_room(self, user: User, room: Room, price: float = None) -> Dict[str, Any]:
         """Purchase a room"""

@@ -222,9 +222,17 @@
                         <div id="purchase-flow" style="display: none;">
                             <h3>Yeni Oda Satın Al</h3>
 
+                            <!-- Step 0: Maze Selection -->
+                            <div class="purchase-step" id="step-maze">
+                                <h4>1. Labirent Seçin</h4>
+                                <div class="template-grid" id="purchase-mazes">
+                                    <!-- Mazes will be populated -->
+                                </div>
+                            </div>
+
                             <!-- Step 1: Door Selection -->
-                            <div class="purchase-step" id="step-doors">
-                                <h4>1. Kapı Sayısı Seçin</h4>
+                            <div class="purchase-step" id="step-doors" style="display: none;">
+                                <h4>2. Kapı Sayısı Seçin</h4>
                                 <div class="door-grid">
                                     <button class="door-option" data-doors="1">
                                         <span class="door-count">1 Kapı</span>
@@ -247,7 +255,7 @@
 
                             <!-- Step 2: Design Selection -->
                             <div class="purchase-step" id="step-design" style="display: none;">
-                                <h4>2. Oda Tasarımı Seçin</h4>
+                                <h4>3. Oda Tasarımı Seçin</h4>
                                 <div class="template-grid" id="purchase-templates">
                                     <!-- Templates will be populated -->
                                 </div>
@@ -256,7 +264,7 @@
 
                             <!-- Step 3: Ad Selection -->
                             <div class="purchase-step" id="step-ads" style="display: none;">
-                                <h4>3. Reklamlar (Opsiyonel)</h4>
+                                <h4>4. Reklamlar (Opsiyonel)</h4>
                                 <p class="step-info">Boş duvarlara reklam ekleyebilirsiniz. Bu adımı atlayıp daha sonra da ekleyebilirsiniz.</p>
                                 <div id="purchase-ad-options">
                                     <!-- Ad options will be populated based on available walls -->

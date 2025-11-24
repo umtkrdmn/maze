@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from pydantic import BaseModel
 
 from database import get_db
 from services.room import RoomService
@@ -9,6 +10,40 @@ from routes.auth import get_current_user
 from schemas import RoomDesignUpdate, RoomAdCreate
 
 router = APIRouter(prefix="/api/room", tags=["room"])
+
+
+class FindRoomRequest(BaseModel):
+    maze_id: int
+    door_count: int
+
+
+@router.post("/find-available")
+async def find_available_room(
+    request: FindRoomRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Find a random available room matching the door count"""
+    room_service = RoomService(db)
+
+    room = await room_service.find_random_room_by_doors(request.maze_id, request.door_count)
+
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No available rooms with {request.door_count} doors found in this maze"
+        )
+
+    return {
+        "room_id": room.id,
+        "x": room.x,
+        "y": room.y,
+        "door_north": room.door_north,
+        "door_south": room.door_south,
+        "door_east": room.door_east,
+        "door_west": room.door_west,
+        "door_count": sum([room.door_north, room.door_south, room.door_east, room.door_west])
+    }
 
 
 @router.get("/my-rooms")
