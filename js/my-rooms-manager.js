@@ -53,11 +53,8 @@ class MyRoomsManager {
     }
 
     bindEvents() {
-        // Close button
-        document.getElementById('my-rooms-close')?.addEventListener('click', () => this.close());
-
-        // Back to maze selection button
-        document.getElementById('my-rooms-back')?.addEventListener('click', () => this.backToMazeSelection());
+        // Close button - goes back to maze selection
+        document.getElementById('my-rooms-close')?.addEventListener('click', () => this.backToMazeSelection());
 
         // Purchase new room button
         document.getElementById('purchase-new-room')?.addEventListener('click', () => this.startPurchaseFlow());
