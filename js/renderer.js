@@ -659,20 +659,29 @@ class Renderer {
             return url;
         };
 
+        // Detect video from URL (support both adConfig.url and adConfig.content_url)
+        const adUrl = adConfig.url || adConfig.content_url;
+        const isVideo = adUrl && (
+            adUrl.endsWith('.mp4') ||
+            adUrl.endsWith('.webm') ||
+            adUrl.endsWith('.ogg') ||
+            adConfig.type === 'video'
+        );
+
         // Material oluştur (image veya video)
         let adMaterial;
 
-        if (adConfig.type === 'video') {
+        if (isVideo) {
             // Video texture
             const video = document.createElement('video');
-            video.src = getProxiedUrl(adConfig.url);
+            video.src = getProxiedUrl(adUrl);
             video.loop = true;
             video.muted = true; // Otomatik oynatma için sessize al
             video.autoplay = true;
             // Remove crossOrigin when using proxy
             // video.crossOrigin = 'anonymous';
 
-            console.log('🎬 Game video ad created (proxied):', adConfig.url, '→', video.src);
+            console.log('🎬 Game video ad created (proxied):', adUrl, '→', video.src);
 
             // Video metadata yüklendiğinde aspect ratio'yu ayarla
             video.addEventListener('loadedmetadata', () => {
@@ -727,7 +736,7 @@ class Renderer {
             }
         } else {
             // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
-            if (!adConfig.url || adConfig.url.startsWith('canvas:')) {
+            if (!adUrl || adUrl.startsWith('canvas:')) {
                 // Canvas texture oluştur (yüksek çözünürlük için daha büyük)
                 const canvas = document.createElement('canvas');
                 canvas.width = 1024;  // Daha yüksek çözünürlük
@@ -737,7 +746,7 @@ class Renderer {
                 // Arka plan rengi
                 const bgColor = adConfig.bgColor || '#FF6B6B';
                 const textColor = adConfig.textColor || '#FFFFFF';
-                const text = adConfig.text || adConfig.text || 'REKLAM';
+                const text = adConfig.text || adConfig.content_text || 'REKLAM';
 
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -764,15 +773,15 @@ class Renderer {
             } else {
                 // URL'den texture yükle
                 const textureLoader = new THREE.TextureLoader();
-                const proxiedUrl = getProxiedUrl(adConfig.url);
+                const proxiedUrl = getProxiedUrl(adUrl);
 
-                console.log('🖼️ Game image ad loading (proxied):', adConfig.url, '→', proxiedUrl);
+                console.log('🖼️ Game image ad loading (proxied):', adUrl, '→', proxiedUrl);
 
                 // Aspect ratio koruma için callback kullan
                 const imageTexture = textureLoader.load(
                     proxiedUrl,
                     (texture) => {
-                        console.log('✅ Game image ad loaded successfully:', adConfig.url);
+                        console.log('✅ Game image ad loaded successfully:', adUrl);
                         // Texture yüklendikten sonra aspect ratio'yu kontrol et
                         if (adConfig.fitMode === 'contain') {
                             const imgWidth = texture.image.width;
