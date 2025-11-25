@@ -640,9 +640,9 @@ class Renderer {
     createAdPanel(adConfig, direction, wallX, wallZ) {
         if (!adConfig) return;
 
-        // Varsayılan değerler
-        const adWidth = adConfig.width || 2;
-        const adHeight = adConfig.height || 1;
+        // Varsayılan değerler - daha büyük boyutlar
+        const adWidth = adConfig.width || 6;  // 2'den 6'ya çıkarıldı (duvar genişliği 10)
+        const adHeight = adConfig.height || 3.5; // 1'den 3.5'e çıkarıldı
         const adY = adConfig.position?.y || 2.5; // Varsayılan yükseklik (duvar ortası)
         const adOffsetX = adConfig.position?.x || 0; // Yatay offset
 
@@ -683,32 +683,30 @@ class Renderer {
 
             console.log('🎬 Game video ad created (proxied):', adUrl, '→', video.src);
 
-            // Video metadata yüklendiğinde aspect ratio'yu ayarla
+            // Video metadata yüklendiğinde aspect ratio'yu ayarla (her zaman)
             video.addEventListener('loadedmetadata', () => {
-                if (adConfig.fitMode === 'contain') {
-                    const videoWidth = video.videoWidth;
-                    const videoHeight = video.videoHeight;
-                    const videoAspect = videoWidth / videoHeight;
-                    const panelAspect = adWidth / adHeight;
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                const videoAspect = videoWidth / videoHeight;
+                const panelAspect = adWidth / adHeight;
 
-                    let finalWidth = adWidth;
-                    let finalHeight = adHeight;
+                let finalWidth = adWidth;
+                let finalHeight = adHeight;
 
-                    // Aspect ratio koruyarak fit et
-                    if (videoAspect > panelAspect) {
-                        // Video daha geniş - genişliğe göre fit et
-                        finalHeight = adWidth / videoAspect;
-                    } else {
-                        // Video daha yüksek - yüksekliğe göre fit et
-                        finalWidth = adHeight * videoAspect;
-                    }
-
-                    // Geometry'yi yeniden boyutlandır
-                    adPanel.geometry.dispose();
-                    adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
-
-                    console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                // Aspect ratio koruyarak fit et
+                if (videoAspect > panelAspect) {
+                    // Video daha geniş - genişliğe göre fit et
+                    finalHeight = adWidth / videoAspect;
+                } else {
+                    // Video daha yüksek - yüksekliğe göre fit et
+                    finalWidth = adHeight * videoAspect;
                 }
+
+                // Geometry'yi yeniden boyutlandır
+                adPanel.geometry.dispose();
+                adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
             });
 
             video.play().catch(err => console.warn('Video autoplay failed:', err));
@@ -777,36 +775,34 @@ class Renderer {
 
                 console.log('🖼️ Game image ad loading (proxied):', adUrl, '→', proxiedUrl);
 
-                // Aspect ratio koruma için callback kullan
+                // Aspect ratio koruma için callback kullan (her zaman)
                 const imageTexture = textureLoader.load(
                     proxiedUrl,
                     (texture) => {
                         console.log('✅ Game image ad loaded successfully:', adUrl);
-                        // Texture yüklendikten sonra aspect ratio'yu kontrol et
-                        if (adConfig.fitMode === 'contain') {
-                            const imgWidth = texture.image.width;
-                            const imgHeight = texture.image.height;
-                            const imgAspect = imgWidth / imgHeight;
-                            const panelAspect = adWidth / adHeight;
+                        // Texture yüklendikten sonra aspect ratio'yu ayarla
+                        const imgWidth = texture.image.width;
+                        const imgHeight = texture.image.height;
+                        const imgAspect = imgWidth / imgHeight;
+                        const panelAspect = adWidth / adHeight;
 
-                            let finalWidth = adWidth;
-                            let finalHeight = adHeight;
+                        let finalWidth = adWidth;
+                        let finalHeight = adHeight;
 
-                            // Aspect ratio koruyarak fit et
-                            if (imgAspect > panelAspect) {
-                                // Resim daha geniş - genişliğe göre fit et
-                                finalHeight = adWidth / imgAspect;
-                            } else {
-                                // Resim daha yüksek - yüksekliğe göre fit et
-                                finalWidth = adHeight * imgAspect;
-                            }
-
-                            // Geometry'yi yeniden boyutlandır
-                            adPanel.geometry.dispose();
-                            adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
-
-                            console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                        // Aspect ratio koruyarak fit et
+                        if (imgAspect > panelAspect) {
+                            // Resim daha geniş - genişliğe göre fit et
+                            finalHeight = adWidth / imgAspect;
+                        } else {
+                            // Resim daha yüksek - yüksekliğe göre fit et
+                            finalWidth = adHeight * imgAspect;
                         }
+
+                        // Geometry'yi yeniden boyutlandır
+                        adPanel.geometry.dispose();
+                        adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                        console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
                     },
                     undefined,
                     (error) => {

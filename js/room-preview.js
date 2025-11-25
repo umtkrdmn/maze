@@ -279,8 +279,8 @@ class RoomPreview {
     }
 
     createAdPanel(ad, wall) {
-        const adWidth = ad.width || 2;
-        const adHeight = ad.height || 1.5;
+        const adWidth = ad.width || 6;  // 2'den 6'ya çıkarıldı
+        const adHeight = ad.height || 3.5; // 1.5'ten 3.5'e çıkarıldı
         const posY = ad.position_y || 2;
         const halfRoom = this.roomSize / 2;
 
