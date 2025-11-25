@@ -136,6 +136,12 @@ app.include_router(room_router)
 app.include_router(character_router)
 app.include_router(admin_router)
 
+# Mount static files (frontend)
+import os
+frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)))
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
+
 
 # WebSocket endpoint
 @app.websocket("/ws")
