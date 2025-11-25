@@ -15,7 +15,7 @@ class Player {
 
         // Hareket
         this.velocity = { x: 0, z: 0 };
-        this.moveSpeed = 0.05; // Yürüme hızı
+        this.moveSpeed = 0.1; // Yürüme hızı (0.05'ten 0.1'e çıkarıldı - 2x daha hızlı)
         this.rotationSpeed = 0.002; // Mouse sensitivitesi (yatay)
         this.pitchSpeed = 0.002; // Mouse sensitivitesi (dikey)
         this.rotation = 0; // Radyan cinsinden (yaw - yatay)
