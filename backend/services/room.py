@@ -83,14 +83,12 @@ class RoomService:
         if room.is_sold:
             return {"success": False, "error": "Room is already sold"}
 
-        price = price or settings.ROOM_PRICE
-
-        if user.balance < price:
-            return {"success": False, "error": "Insufficient balance"}
-
-        # Deduct balance
-        user.balance -= price
-        new_balance = user.balance
+        # TODO: Implement real payment system
+        # For now, just mark the room as purchased without deducting balance
+        # price = price or settings.ROOM_PRICE
+        # if user.balance < price:
+        #     return {"success": False, "error": "Insufficient balance"}
+        # user.balance -= price
 
         # Update room ownership
         room.owner_id = user.id
@@ -109,24 +107,25 @@ class RoomService:
             )
             self.db.add(design)
 
-        # Create transaction
-        transaction = Transaction(
-            user_id=user.id,
-            transaction_type=TransactionType.ROOM_PURCHASE.value,
-            amount=-price,
-            balance_after=new_balance,
-            reference_type="room",
-            reference_id=room.id,
-            description=f"Purchased room at ({room.x}, {room.y})"
-        )
-        self.db.add(transaction)
+        # TODO: Create transaction record when payment is implemented
+        # price = price or settings.ROOM_PRICE
+        # transaction = Transaction(
+        #     user_id=user.id,
+        #     transaction_type=TransactionType.ROOM_PURCHASE.value,
+        #     amount=-price,
+        #     balance_after=user.balance,
+        #     reference_type="room",
+        #     reference_id=room.id,
+        #     description=f"Purchased room at ({room.x}, {room.y})"
+        # )
+        # self.db.add(transaction)
 
         await self.db.commit()
 
         return {
             "success": True,
             "room_id": room.id,
-            "new_balance": new_balance
+            "new_balance": user.balance  # Return current balance without change
         }
 
     async def update_room_design(
