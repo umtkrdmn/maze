@@ -649,17 +649,30 @@ class Renderer {
         // Reklam paneli geometrisi
         const adGeometry = new THREE.PlaneGeometry(adWidth, adHeight);
 
+        // Proxy helper function
+        const getProxiedUrl = (url) => {
+            if (!url) return url;
+            // Check if it's an external URL
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return `/api/room/proxy?url=${encodeURIComponent(url)}`;
+            }
+            return url;
+        };
+
         // Material oluştur (image veya video)
         let adMaterial;
 
         if (adConfig.type === 'video') {
             // Video texture
             const video = document.createElement('video');
-            video.src = adConfig.url;
+            video.src = getProxiedUrl(adConfig.url);
             video.loop = true;
             video.muted = true; // Otomatik oynatma için sessize al
             video.autoplay = true;
-            video.crossOrigin = 'anonymous'; // CORS için
+            // Remove crossOrigin when using proxy
+            // video.crossOrigin = 'anonymous';
+
+            console.log('🎬 Game video ad created (proxied):', adConfig.url, '→', video.src);
 
             // Video metadata yüklendiğinde aspect ratio'yu ayarla
             video.addEventListener('loadedmetadata', () => {
@@ -751,11 +764,15 @@ class Renderer {
             } else {
                 // URL'den texture yükle
                 const textureLoader = new THREE.TextureLoader();
+                const proxiedUrl = getProxiedUrl(adConfig.url);
+
+                console.log('🖼️ Game image ad loading (proxied):', adConfig.url, '→', proxiedUrl);
 
                 // Aspect ratio koruma için callback kullan
                 const imageTexture = textureLoader.load(
-                    adConfig.url,
+                    proxiedUrl,
                     (texture) => {
+                        console.log('✅ Game image ad loaded successfully:', adConfig.url);
                         // Texture yüklendikten sonra aspect ratio'yu kontrol et
                         if (adConfig.fitMode === 'contain') {
                             const imgWidth = texture.image.width;
@@ -781,6 +798,10 @@ class Renderer {
 
                             console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
                         }
+                    },
+                    undefined,
+                    (error) => {
+                        console.error('❌ Error loading game image ad:', error, 'URL:', proxiedUrl);
                     }
                 );
 
