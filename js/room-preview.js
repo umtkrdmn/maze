@@ -309,25 +309,60 @@ class RoomPreview {
 
         // Create material based on ad type
         let panelMaterial;
-        if (ad.ad_type === 'image' && ad.content_url) {
+
+        // Check if it's a video file based on URL extension
+        const isVideo = ad.content_url && (
+            ad.content_url.endsWith('.mp4') ||
+            ad.content_url.endsWith('.webm') ||
+            ad.content_url.endsWith('.ogg')
+        );
+
+        if (isVideo) {
+            // Video texture
+            const video = document.createElement('video');
+            video.src = ad.content_url;
+            video.loop = true;
+            video.muted = true;
+            video.autoplay = true;
+            video.crossOrigin = 'anonymous';
+            video.playsInline = true;
+
+            video.play().catch(err => console.warn('Video autoplay failed:', err));
+
+            const videoTexture = new THREE.VideoTexture(video);
+            videoTexture.minFilter = THREE.LinearFilter;
+            videoTexture.magFilter = THREE.LinearFilter;
+
+            panelMaterial = new THREE.MeshBasicMaterial({
+                map: videoTexture,
+                side: THREE.DoubleSide
+            });
+
+            console.log('Video ad created:', ad.content_url);
+        } else if (ad.ad_type === 'image' && ad.content_url) {
+            // Image texture
             const textureLoader = new THREE.TextureLoader();
-            textureLoader.load(
+            const imageTexture = textureLoader.load(
                 ad.content_url,
                 (texture) => {
-                    panelMaterial.map = texture;
-                    panelMaterial.needsUpdate = true;
+                    console.log('Image ad loaded:', ad.content_url);
                 },
                 undefined,
                 (error) => {
-                    console.error('Error loading ad texture:', error);
+                    console.error('Error loading ad image:', error);
                 }
             );
-            panelMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+
+            panelMaterial = new THREE.MeshBasicMaterial({
+                map: imageTexture,
+                color: 0xffffff,
+                side: THREE.DoubleSide
+            });
         } else if (ad.ad_type === 'canvas' && ad.content_text) {
             // Create canvas texture
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 256;
+            canvas.width = 1024;
+            canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
             // Background
@@ -336,15 +371,25 @@ class RoomPreview {
 
             // Text
             ctx.fillStyle = '#000000';
-            ctx.font = 'bold 32px Arial';
+            ctx.font = 'bold 80px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(ad.content_text, canvas.width / 2, canvas.height / 2);
 
             const texture = new THREE.CanvasTexture(canvas);
-            panelMaterial = new THREE.MeshBasicMaterial({ map: texture });
+            panelMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.DoubleSide
+            });
+
+            console.log('Canvas ad created:', ad.content_text);
         } else {
-            panelMaterial = new THREE.MeshBasicMaterial({ color: 0x4CAF50 });
+            // Fallback material
+            panelMaterial = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                side: THREE.DoubleSide
+            });
+            console.warn('Ad with unknown type:', ad);
         }
 
         const panel = new THREE.Mesh(panelGeometry, panelMaterial);
