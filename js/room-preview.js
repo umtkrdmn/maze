@@ -334,7 +334,8 @@ class RoomPreview {
             video.loop = true;
             video.muted = true;
             video.autoplay = true;
-            video.crossOrigin = 'anonymous';
+            // Remove crossOrigin when using proxy - it's same-origin now
+            // video.crossOrigin = 'anonymous';
             video.playsInline = true;
 
             video.play().catch(err => console.warn('Video autoplay failed:', err));
@@ -348,18 +349,21 @@ class RoomPreview {
                 side: THREE.DoubleSide
             });
 
-            console.log('Video ad created (proxied):', ad.content_url);
+            console.log('Video ad created (proxied):', ad.content_url, '→', video.src);
         } else if (ad.ad_type === 'image' && ad.content_url) {
             // Image texture
             const textureLoader = new THREE.TextureLoader();
+            const proxiedUrl = getProxiedUrl(ad.content_url);
+            console.log('Image ad loading:', ad.content_url, '→', proxiedUrl);
+
             const imageTexture = textureLoader.load(
-                getProxiedUrl(ad.content_url),
+                proxiedUrl,
                 (texture) => {
-                    console.log('Image ad loaded (proxied):', ad.content_url);
+                    console.log('Image ad loaded successfully:', ad.content_url);
                 },
                 undefined,
                 (error) => {
-                    console.error('Error loading ad image:', error);
+                    console.error('Error loading ad image:', error, 'URL:', proxiedUrl);
                 }
             );
 
