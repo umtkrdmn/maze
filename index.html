@@ -42,6 +42,10 @@
             <div id="maze-selection-list" class="maze-selection-grid">
                 <!-- Maze options will be populated here -->
             </div>
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <a href="#" id="maze-logout" style="color: #888; font-size: 14px;">Çıkış Yap</a>
+                <button class="btn btn-primary" id="maze-manage-rooms" style="margin: 0; width: auto; padding: 12px 30px;">Odalarım</button>
+            </div>
         </div>
     </div>
 
@@ -180,6 +184,152 @@
         </div>
     </div>
 
+    <!-- My Rooms Modal -->
+    <div id="my-rooms-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-fullscreen">
+            <div class="modal-header">
+                <button class="btn btn-secondary" id="my-rooms-back" style="margin-right: auto;">← Labirentler</button>
+                <h2>Odalarım</h2>
+                <button class="btn-close" id="my-rooms-close">×</button>
+            </div>
+            <div class="my-rooms-container">
+                <!-- Left Panel: Room List -->
+                <div class="my-rooms-sidebar">
+                    <div class="my-rooms-header">
+                        <button class="btn btn-primary" id="purchase-new-room">+ Yeni Oda Satın Al</button>
+                        <div class="user-balance-info">
+                            <span>Bakiye: </span>
+                            <span id="my-rooms-balance">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="my-rooms-list" id="my-rooms-list">
+                        <!-- Room cards will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Center Panel: 3D Preview -->
+                <div class="my-rooms-preview">
+                    <canvas id="my-rooms-canvas"></canvas>
+                    <div id="my-rooms-loading" class="loading-message">
+                        <p>Oda seçin veya yeni oda satın alın</p>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Customization -->
+                <div class="my-rooms-editor">
+                    <div id="my-rooms-editor-content">
+                        <!-- Purchase Flow -->
+                        <div id="purchase-flow" style="display: none;">
+                            <h3>Yeni Oda Satın Al</h3>
+
+                            <!-- Step 0: Maze Selection -->
+                            <div class="purchase-step" id="step-maze">
+                                <h4>1. Labirent Seçin</h4>
+                                <div class="template-grid" id="purchase-mazes">
+                                    <!-- Mazes will be populated -->
+                                </div>
+                            </div>
+
+                            <!-- Step 1: Door Selection -->
+                            <div class="purchase-step" id="step-doors" style="display: none;">
+                                <h4>2. Kapı Sayısı Seçin</h4>
+                                <div class="door-grid">
+                                    <button class="door-option" data-doors="1">
+                                        <span class="door-count">1 Kapı</span>
+                                        <span class="door-price">$1.00</span>
+                                    </button>
+                                    <button class="door-option" data-doors="2">
+                                        <span class="door-count">2 Kapı</span>
+                                        <span class="door-price">$1.00</span>
+                                    </button>
+                                    <button class="door-option" data-doors="3">
+                                        <span class="door-count">3 Kapı</span>
+                                        <span class="door-price">$1.00</span>
+                                    </button>
+                                    <button class="door-option" data-doors="4">
+                                        <span class="door-count">4 Kapı</span>
+                                        <span class="door-price">$1.00</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Design Selection -->
+                            <div class="purchase-step" id="step-design" style="display: none;">
+                                <h4>3. Oda Tasarımı Seçin</h4>
+                                <div class="template-grid" id="purchase-templates">
+                                    <!-- Templates will be populated -->
+                                </div>
+                                <button class="btn btn-secondary btn-back" id="back-to-doors">← Geri</button>
+                            </div>
+
+                            <!-- Step 3: Ad Selection -->
+                            <div class="purchase-step" id="step-ads" style="display: none;">
+                                <h4>4. Reklamlar (Opsiyonel)</h4>
+                                <p class="step-info">Boş duvarlara reklam ekleyebilirsiniz. Bu adımı atlayıp daha sonra da ekleyebilirsiniz.</p>
+                                <div id="purchase-ad-options">
+                                    <!-- Ad options will be populated based on available walls -->
+                                </div>
+                                <div class="purchase-actions">
+                                    <button class="btn btn-secondary" id="back-to-design">← Geri</button>
+                                    <button class="btn btn-secondary" id="skip-ads">Atla</button>
+                                    <button class="btn btn-primary" id="complete-purchase">Satın Al</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Flow -->
+                        <div id="edit-flow" style="display: none;">
+                            <h3>Oda Düzenle</h3>
+                            <div class="room-info" id="editing-room-info">
+                                <!-- Current room info -->
+                            </div>
+
+                            <!-- Design Templates -->
+                            <div class="edit-section">
+                                <h4>Tasarım Şablonu</h4>
+                                <div class="template-grid-small" id="edit-templates">
+                                    <!-- Templates -->
+                                </div>
+                            </div>
+
+                            <!-- Custom Colors -->
+                            <div class="edit-section">
+                                <h4>Özel Renkler</h4>
+                                <div class="color-options">
+                                    <div class="color-option">
+                                        <label>Duvar</label>
+                                        <input type="color" id="edit-wall-color" value="#808080">
+                                    </div>
+                                    <div class="color-option">
+                                        <label>Zemin</label>
+                                        <input type="color" id="edit-floor-color" value="#6B4E3D">
+                                    </div>
+                                    <div class="color-option">
+                                        <label>Tavan</label>
+                                        <input type="color" id="edit-ceiling-color" value="#EEEEEE">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Advertisements -->
+                            <div class="edit-section">
+                                <h4>Reklamlar</h4>
+                                <div id="edit-ads">
+                                    <!-- Ad management for each wall -->
+                                </div>
+                            </div>
+
+                            <div class="edit-actions">
+                                <button class="btn btn-secondary" id="cancel-edit">İptal</button>
+                                <button class="btn btn-primary" id="save-room">Değişiklikleri Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -189,10 +339,12 @@
     <script src="js/sound-manager.js?v=1763883649"></script>
     <script src="js/maze.js?v=1763883649"></script>
     <script src="js/room-provider.js?v=1763906737"></script>
-    <script src="js/player.js?v=1763883649"></script>
+    <script src="js/player.js?v=1763920400"></script>
     <script src="js/minimap.js?v=1763915602"></script>
-    <script src="js/renderer.js?v=1763884102"></script>
+    <script src="js/renderer.js?v=1763920300"></script>
     <script src="js/mobile-controls.js?v=1763883649"></script>
+    <script src="js/room-preview.js?v=1763920300"></script>
+    <script src="js/my-rooms-manager.js?v=1763920000"></script>
     <script src="js/ui-manager.js?v=1763883649"></script>
     <script src="js/game.js?v=1763915202"></script>
 </body>

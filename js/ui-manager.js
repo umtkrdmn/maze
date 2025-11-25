@@ -5,6 +5,7 @@ class UIManager {
         this.isLoggedIn = false;
         this.isRegisterMode = false;
         this.currentUser = null;
+        this.myRoomsManager = null;
 
         this.initAuthUI();
         this.initGameUI();
@@ -136,8 +137,43 @@ class UIManager {
                 balanceEl.textContent = `Bakiye: $${this.currentUser.balance.toFixed(2)}`;
             }
         }
-        // Show maze selection screen
+        // Show maze selection directly
         await this.showMazeSelection();
+    }
+
+    bindMazeSelectionEvents() {
+        // Bind events only once
+        if (this.mazeSelectionBound) return;
+
+        // Manage Rooms button
+        document.getElementById('maze-manage-rooms')?.addEventListener('click', () => {
+            document.getElementById('maze-selection-modal').style.display = 'none';
+            this.showMyRooms();
+        });
+
+        // Logout link
+        document.getElementById('maze-logout')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.logout();
+        });
+
+        this.mazeSelectionBound = true;
+    }
+
+    logout() {
+        api.clearToken();
+        this.isLoggedIn = false;
+        this.currentUser = null;
+
+        // Hide all modals
+        document.getElementById('my-rooms-modal').style.display = 'none';
+        document.getElementById('maze-selection-modal').style.display = 'none';
+        document.getElementById('game-container').style.display = 'none';
+
+        // Show auth modal
+        document.getElementById('auth-modal').style.display = 'flex';
+
+        this.showNotification('Çıkış yapıldı', 'info');
     }
 
     async showMazeSelection() {
@@ -164,13 +200,6 @@ class UIManager {
                 return;
             }
 
-            if (mazes.length === 1) {
-                // Only one maze, start directly
-                console.log('Only 1 maze, starting directly with maze:', mazes[0]);
-                this.startGameWithMaze(mazes[0].id);
-                return;
-            }
-
             // Show maze selection modal
             const modal = document.getElementById('maze-selection-modal');
             const list = document.getElementById('maze-selection-list');
@@ -193,6 +222,9 @@ class UIManager {
             `).join('');
 
             modal.style.display = 'flex';
+
+            // Bind maze selection events (only once)
+            this.bindMazeSelectionEvents();
         } catch (error) {
             console.error('Error loading mazes:', error);
             this.showNotification('Labirentler yüklenemedi: ' + error.message, 'error');
@@ -677,8 +709,25 @@ class UIManager {
         return div.innerHTML;
     }
 
-    showMyRooms() {
-        this.showNotification('Odalarım özelliği yakında!', 'info');
+    async showMyRooms() {
+        // Initialize MyRoomsManager if not already done
+        if (!this.myRoomsManager) {
+            try {
+                this.myRoomsManager = new MyRoomsManager(api);
+            } catch (error) {
+                console.error('Failed to initialize MyRoomsManager:', error);
+                this.showNotification('Odalarım özelliği yüklenemedi!', 'error');
+                return;
+            }
+        }
+
+        // Open the My Rooms modal
+        try {
+            await this.myRoomsManager.open();
+        } catch (error) {
+            console.error('Failed to open MyRoomsManager:', error);
+            this.showNotification('Odalarım ekranı açılamadı!', 'error');
+        }
     }
 
     showRoomShop() {

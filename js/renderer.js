@@ -640,53 +640,73 @@ class Renderer {
     createAdPanel(adConfig, direction, wallX, wallZ) {
         if (!adConfig) return;
 
-        // Varsayılan değerler
-        const adWidth = adConfig.width || 2;
-        const adHeight = adConfig.height || 1;
+        // Varsayılan değerler - daha büyük boyutlar
+        const adWidth = adConfig.width || 6;  // 2'den 6'ya çıkarıldı (duvar genişliği 10)
+        const adHeight = adConfig.height || 3.5; // 1'den 3.5'e çıkarıldı
         const adY = adConfig.position?.y || 2.5; // Varsayılan yükseklik (duvar ortası)
         const adOffsetX = adConfig.position?.x || 0; // Yatay offset
 
         // Reklam paneli geometrisi
         const adGeometry = new THREE.PlaneGeometry(adWidth, adHeight);
 
+        // Proxy helper function
+        const getProxiedUrl = (url) => {
+            if (!url) return url;
+            // Check if it's an external URL
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return `/api/room/proxy?url=${encodeURIComponent(url)}`;
+            }
+            return url;
+        };
+
+        // Detect video from URL (support both adConfig.url and adConfig.content_url)
+        const adUrl = adConfig.url || adConfig.content_url;
+        const isVideo = adUrl && (
+            adUrl.endsWith('.mp4') ||
+            adUrl.endsWith('.webm') ||
+            adUrl.endsWith('.ogg') ||
+            adConfig.type === 'video'
+        );
+
         // Material oluştur (image veya video)
         let adMaterial;
 
-        if (adConfig.type === 'video') {
+        if (isVideo) {
             // Video texture
             const video = document.createElement('video');
-            video.src = adConfig.url;
+            video.src = getProxiedUrl(adUrl);
             video.loop = true;
             video.muted = true; // Otomatik oynatma için sessize al
             video.autoplay = true;
-            video.crossOrigin = 'anonymous'; // CORS için
+            // Remove crossOrigin when using proxy
+            // video.crossOrigin = 'anonymous';
 
-            // Video metadata yüklendiğinde aspect ratio'yu ayarla
+            console.log('🎬 Game video ad created (proxied):', adUrl, '→', video.src);
+
+            // Video metadata yüklendiğinde aspect ratio'yu ayarla (her zaman)
             video.addEventListener('loadedmetadata', () => {
-                if (adConfig.fitMode === 'contain') {
-                    const videoWidth = video.videoWidth;
-                    const videoHeight = video.videoHeight;
-                    const videoAspect = videoWidth / videoHeight;
-                    const panelAspect = adWidth / adHeight;
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                const videoAspect = videoWidth / videoHeight;
+                const panelAspect = adWidth / adHeight;
 
-                    let finalWidth = adWidth;
-                    let finalHeight = adHeight;
+                let finalWidth = adWidth;
+                let finalHeight = adHeight;
 
-                    // Aspect ratio koruyarak fit et
-                    if (videoAspect > panelAspect) {
-                        // Video daha geniş - genişliğe göre fit et
-                        finalHeight = adWidth / videoAspect;
-                    } else {
-                        // Video daha yüksek - yüksekliğe göre fit et
-                        finalWidth = adHeight * videoAspect;
-                    }
-
-                    // Geometry'yi yeniden boyutlandır
-                    adPanel.geometry.dispose();
-                    adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
-
-                    console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                // Aspect ratio koruyarak fit et
+                if (videoAspect > panelAspect) {
+                    // Video daha geniş - genişliğe göre fit et
+                    finalHeight = adWidth / videoAspect;
+                } else {
+                    // Video daha yüksek - yüksekliğe göre fit et
+                    finalWidth = adHeight * videoAspect;
                 }
+
+                // Geometry'yi yeniden boyutlandır
+                adPanel.geometry.dispose();
+                adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
             });
 
             video.play().catch(err => console.warn('Video autoplay failed:', err));
@@ -714,7 +734,7 @@ class Renderer {
             }
         } else {
             // Image texture - Canvas tabanlı texture oluştur (internet gerektirmez)
-            if (!adConfig.url || adConfig.url.startsWith('canvas:')) {
+            if (!adUrl || adUrl.startsWith('canvas:')) {
                 // Canvas texture oluştur (yüksek çözünürlük için daha büyük)
                 const canvas = document.createElement('canvas');
                 canvas.width = 1024;  // Daha yüksek çözünürlük
@@ -724,7 +744,7 @@ class Renderer {
                 // Arka plan rengi
                 const bgColor = adConfig.bgColor || '#FF6B6B';
                 const textColor = adConfig.textColor || '#FFFFFF';
-                const text = adConfig.text || adConfig.text || 'REKLAM';
+                const text = adConfig.text || adConfig.content_text || 'REKLAM';
 
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -751,36 +771,42 @@ class Renderer {
             } else {
                 // URL'den texture yükle
                 const textureLoader = new THREE.TextureLoader();
+                const proxiedUrl = getProxiedUrl(adUrl);
 
-                // Aspect ratio koruma için callback kullan
+                console.log('🖼️ Game image ad loading (proxied):', adUrl, '→', proxiedUrl);
+
+                // Aspect ratio koruma için callback kullan (her zaman)
                 const imageTexture = textureLoader.load(
-                    adConfig.url,
+                    proxiedUrl,
                     (texture) => {
-                        // Texture yüklendikten sonra aspect ratio'yu kontrol et
-                        if (adConfig.fitMode === 'contain') {
-                            const imgWidth = texture.image.width;
-                            const imgHeight = texture.image.height;
-                            const imgAspect = imgWidth / imgHeight;
-                            const panelAspect = adWidth / adHeight;
+                        console.log('✅ Game image ad loaded successfully:', adUrl);
+                        // Texture yüklendikten sonra aspect ratio'yu ayarla
+                        const imgWidth = texture.image.width;
+                        const imgHeight = texture.image.height;
+                        const imgAspect = imgWidth / imgHeight;
+                        const panelAspect = adWidth / adHeight;
 
-                            let finalWidth = adWidth;
-                            let finalHeight = adHeight;
+                        let finalWidth = adWidth;
+                        let finalHeight = adHeight;
 
-                            // Aspect ratio koruyarak fit et
-                            if (imgAspect > panelAspect) {
-                                // Resim daha geniş - genişliğe göre fit et
-                                finalHeight = adWidth / imgAspect;
-                            } else {
-                                // Resim daha yüksek - yüksekliğe göre fit et
-                                finalWidth = adHeight * imgAspect;
-                            }
-
-                            // Geometry'yi yeniden boyutlandır
-                            adPanel.geometry.dispose();
-                            adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
-
-                            console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                        // Aspect ratio koruyarak fit et
+                        if (imgAspect > panelAspect) {
+                            // Resim daha geniş - genişliğe göre fit et
+                            finalHeight = adWidth / imgAspect;
+                        } else {
+                            // Resim daha yüksek - yüksekliğe göre fit et
+                            finalWidth = adHeight * imgAspect;
                         }
+
+                        // Geometry'yi yeniden boyutlandır
+                        adPanel.geometry.dispose();
+                        adPanel.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+
+                        console.log(`Image aspect ratio: ${imgAspect.toFixed(2)}, Panel adjusted to: ${finalWidth.toFixed(2)}x${finalHeight.toFixed(2)}`);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error('❌ Error loading game image ad:', error, 'URL:', proxiedUrl);
                     }
                 );
 

@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
+import random
 
 from models.maze import Room, RoomDesign, RoomAd, RoomTemplate
 from models.user import User
@@ -30,19 +31,64 @@ class RoomService:
         )
         return result.scalar_one_or_none()
 
+    async def get_user_rooms(self, user_id: int) -> List[Room]:
+        """Get all rooms owned by a user"""
+        from models.maze import Maze
+        result = await self.db.execute(
+            select(Room)
+            .options(
+                selectinload(Room.design),
+                selectinload(Room.ads),
+                selectinload(Room.maze)
+            )
+            .where(Room.owner_id == user_id)
+            .order_by(Room.sold_at.desc())
+        )
+        return result.scalars().all()
+
+    async def find_random_room_by_doors(self, maze_id: int, door_count: int) -> Optional[Room]:
+        """Find a random available room with the specified number of doors"""
+        # Get all unsold rooms in the maze
+        result = await self.db.execute(
+            select(Room)
+            .where(
+                and_(
+                    Room.maze_id == maze_id,
+                    Room.is_sold == False
+                )
+            )
+        )
+        rooms = result.scalars().all()
+
+        # Filter by door count in Python
+        matching_rooms = []
+        for room in rooms:
+            actual_door_count = sum([
+                1 if room.door_north else 0,
+                1 if room.door_south else 0,
+                1 if room.door_east else 0,
+                1 if room.door_west else 0
+            ])
+            if actual_door_count == door_count:
+                matching_rooms.append(room)
+
+        if not matching_rooms:
+            return None
+
+        # Return a random room from the available ones
+        return random.choice(matching_rooms)
+
     async def purchase_room(self, user: User, room: Room, price: float = None) -> Dict[str, Any]:
         """Purchase a room"""
         if room.is_sold:
             return {"success": False, "error": "Room is already sold"}
 
-        price = price or settings.ROOM_PRICE
-
-        if user.balance < price:
-            return {"success": False, "error": "Insufficient balance"}
-
-        # Deduct balance
-        user.balance -= price
-        new_balance = user.balance
+        # TODO: Implement real payment system
+        # For now, just mark the room as purchased without deducting balance
+        # price = price or settings.ROOM_PRICE
+        # if user.balance < price:
+        #     return {"success": False, "error": "Insufficient balance"}
+        # user.balance -= price
 
         # Update room ownership
         room.owner_id = user.id
@@ -61,24 +107,25 @@ class RoomService:
             )
             self.db.add(design)
 
-        # Create transaction
-        transaction = Transaction(
-            user_id=user.id,
-            transaction_type=TransactionType.ROOM_PURCHASE.value,
-            amount=-price,
-            balance_after=new_balance,
-            reference_type="room",
-            reference_id=room.id,
-            description=f"Purchased room at ({room.x}, {room.y})"
-        )
-        self.db.add(transaction)
+        # TODO: Create transaction record when payment is implemented
+        # price = price or settings.ROOM_PRICE
+        # transaction = Transaction(
+        #     user_id=user.id,
+        #     transaction_type=TransactionType.ROOM_PURCHASE.value,
+        #     amount=-price,
+        #     balance_after=user.balance,
+        #     reference_type="room",
+        #     reference_id=room.id,
+        #     description=f"Purchased room at ({room.x}, {room.y})"
+        # )
+        # self.db.add(transaction)
 
         await self.db.commit()
 
         return {
             "success": True,
             "room_id": room.id,
-            "new_balance": new_balance
+            "new_balance": user.balance  # Return current balance without change
         }
 
     async def update_room_design(

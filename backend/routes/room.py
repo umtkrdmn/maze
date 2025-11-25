@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from pydantic import BaseModel
+import httpx
 
 from database import get_db
 from services.room import RoomService
@@ -9,6 +12,97 @@ from routes.auth import get_current_user
 from schemas import RoomDesignUpdate, RoomAdCreate
 
 router = APIRouter(prefix="/api/room", tags=["room"])
+
+
+class FindRoomRequest(BaseModel):
+    maze_id: int
+    door_count: int
+
+
+@router.post("/find-available")
+async def find_available_room(
+    request: FindRoomRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Find a random available room matching the door count"""
+    room_service = RoomService(db)
+
+    room = await room_service.find_random_room_by_doors(request.maze_id, request.door_count)
+
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No available rooms with {request.door_count} doors found in this maze"
+        )
+
+    return {
+        "room_id": room.id,
+        "x": room.x,
+        "y": room.y,
+        "door_north": room.door_north,
+        "door_south": room.door_south,
+        "door_east": room.door_east,
+        "door_west": room.door_west,
+        "door_count": sum([room.door_north, room.door_south, room.door_east, room.door_west])
+    }
+
+
+@router.get("/my-rooms")
+async def get_my_rooms(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all rooms owned by the current user"""
+    room_service = RoomService(db)
+    rooms = await room_service.get_user_rooms(current_user.id)
+
+    return {
+        "rooms": [
+            {
+                "id": r.id,
+                "x": r.x,
+                "y": r.y,
+                "maze_id": r.maze_id,
+                "maze_name": r.maze.name,
+                "door_north": r.door_north,
+                "door_south": r.door_south,
+                "door_east": r.door_east,
+                "door_west": r.door_west,
+                "has_portal": r.has_portal,
+                "sold_at": r.sold_at.isoformat() if r.sold_at else None,
+                "design": {
+                    "template": r.design.template if r.design else "default",
+                    "wall_color": r.design.wall_color if r.design else "#808080",
+                    "floor_color": r.design.floor_color if r.design else "#6B4E3D",
+                    "ceiling_color": r.design.ceiling_color if r.design else "#EEEEEE",
+                    "ambient_light_color": r.design.ambient_light_color if r.design else "#FFFFFF",
+                    "ambient_light_intensity": r.design.ambient_light_intensity if r.design else 0.5,
+                } if r.design else {
+                    "template": "default",
+                    "wall_color": "#808080",
+                    "floor_color": "#6B4E3D",
+                    "ceiling_color": "#EEEEEE",
+                    "ambient_light_color": "#FFFFFF",
+                    "ambient_light_intensity": 0.5,
+                },
+                "ads": [
+                    {
+                        "id": ad.id,
+                        "wall": ad.wall,
+                        "ad_type": ad.ad_type,
+                        "content_url": ad.content_url,
+                        "content_text": ad.content_text,
+                        "click_url": ad.click_url,
+                        "is_active": ad.is_active
+                    }
+                    for ad in r.ads if ad.is_active
+                ]
+            }
+            for r in rooms
+        ],
+        "count": len(rooms)
+    }
 
 
 @router.post("/{room_id}/purchase")
@@ -258,3 +352,32 @@ async def get_templates():
             {"name": "medieval", "display_name": "Ortaçağ"}
         ]
     }
+
+
+@router.get("/proxy")
+async def proxy_media(url: str = Query(..., description="URL of the media to proxy")):
+    """Proxy external media files to avoid CORS issues"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+
+            # Get content type from response
+            content_type = response.headers.get('content-type', 'application/octet-stream')
+
+            # Return streaming response with CORS headers
+            return StreamingResponse(
+                iter([response.content]),
+                media_type=content_type,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                    "Cache-Control": "public, max-age=3600"
+                }
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to fetch media: {str(e)}"
+        )

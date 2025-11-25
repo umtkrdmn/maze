@@ -102,6 +102,17 @@ class ApiClient {
     }
 
     // Room endpoints
+    async getMyRooms() {
+        return this.request('/api/room/my-rooms');
+    }
+
+    async findAvailableRoom(mazeId, doorCount) {
+        return this.request('/api/room/find-available', {
+            method: 'POST',
+            body: JSON.stringify({ maze_id: mazeId, door_count: doorCount })
+        });
+    }
+
     async purchaseRoom(roomId) {
         return this.request(`/api/room/${roomId}/purchase`, { method: 'POST' });
     }
