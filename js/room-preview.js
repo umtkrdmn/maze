@@ -20,10 +20,14 @@ class RoomPreview {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
 
+        // Get canvas dimensions, use defaults if canvas is not visible yet
+        const width = this.canvas.clientWidth || 800;
+        const height = this.canvas.clientHeight || 600;
+
         // Create camera
         this.camera = new THREE.PerspectiveCamera(
             75,
-            this.canvas.clientWidth / this.canvas.clientHeight,
+            width / height,
             0.1,
             1000
         );
@@ -33,7 +37,7 @@ class RoomPreview {
 
         // Create renderer
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-        this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        this.renderer.setSize(width, height);
         this.renderer.shadowMap.enabled = true;
 
         // Add lights
@@ -44,6 +48,11 @@ class RoomPreview {
 
         // Start animation loop
         this.animate();
+    }
+
+    // Public method to force resize update (call after modal becomes visible)
+    forceResize() {
+        this.onResize();
     }
 
     addLights() {

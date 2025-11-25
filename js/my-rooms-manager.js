@@ -726,6 +726,14 @@ class MyRoomsManager {
             // Show modal
             this.modal.style.display = 'flex';
 
+            // Force resize after modal is visible (fixes black screen issue)
+            // Use requestAnimationFrame to ensure the modal has rendered
+            requestAnimationFrame(() => {
+                if (this.roomPreview) {
+                    this.roomPreview.forceResize();
+                }
+            });
+
             // Load rooms and update balance
             await this.loadMyRooms();
 
