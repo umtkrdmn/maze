@@ -56,20 +56,33 @@ class RoomPreview {
     }
 
     addLights() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // Strong ambient light for overall visibility
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         this.scene.add(ambientLight);
 
-        // Directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(5, 10, 5);
+        // Directional light from above
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 10, 0);
         directionalLight.castShadow = true;
         this.scene.add(directionalLight);
 
-        // Point light for better visibility
-        const pointLight = new THREE.PointLight(0xffffff, 0.3);
-        pointLight.position.set(0, this.wallHeight - 1, 0);
-        this.scene.add(pointLight);
+        // Central point light (ceiling)
+        const ceilingLight = new THREE.PointLight(0xffffff, 0.8);
+        ceilingLight.position.set(0, this.wallHeight - 0.5, 0);
+        this.scene.add(ceilingLight);
+
+        // Additional point lights in corners for even illumination
+        const cornerPositions = [
+            [-3, 3, -3],
+            [3, 3, -3],
+            [-3, 3, 3],
+            [3, 3, 3]
+        ];
+        cornerPositions.forEach(pos => {
+            const light = new THREE.PointLight(0xffffff, 0.3);
+            light.position.set(...pos);
+            this.scene.add(light);
+        });
     }
 
     onResize() {
