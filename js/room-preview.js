@@ -317,10 +317,20 @@ class RoomPreview {
             ad.content_url.endsWith('.ogg')
         );
 
+        // Proxy external URLs to avoid CORS issues
+        const getProxiedUrl = (url) => {
+            if (!url) return url;
+            // Check if it's an external URL (not localhost or relative)
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return `/api/room/proxy?url=${encodeURIComponent(url)}`;
+            }
+            return url;
+        };
+
         if (isVideo) {
             // Video texture
             const video = document.createElement('video');
-            video.src = ad.content_url;
+            video.src = getProxiedUrl(ad.content_url);
             video.loop = true;
             video.muted = true;
             video.autoplay = true;
@@ -338,14 +348,14 @@ class RoomPreview {
                 side: THREE.DoubleSide
             });
 
-            console.log('Video ad created:', ad.content_url);
+            console.log('Video ad created (proxied):', ad.content_url);
         } else if (ad.ad_type === 'image' && ad.content_url) {
             // Image texture
             const textureLoader = new THREE.TextureLoader();
             const imageTexture = textureLoader.load(
-                ad.content_url,
+                getProxiedUrl(ad.content_url),
                 (texture) => {
-                    console.log('Image ad loaded:', ad.content_url);
+                    console.log('Image ad loaded (proxied):', ad.content_url);
                 },
                 undefined,
                 (error) => {

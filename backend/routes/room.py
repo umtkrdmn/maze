@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from pydantic import BaseModel
+import httpx
 
 from database import get_db
 from services.room import RoomService
@@ -350,3 +352,32 @@ async def get_templates():
             {"name": "medieval", "display_name": "Ortaçağ"}
         ]
     }
+
+
+@router.get("/proxy")
+async def proxy_media(url: str = Query(..., description="URL of the media to proxy")):
+    """Proxy external media files to avoid CORS issues"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+
+            # Get content type from response
+            content_type = response.headers.get('content-type', 'application/octet-stream')
+
+            # Return streaming response with CORS headers
+            return StreamingResponse(
+                iter([response.content]),
+                media_type=content_type,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                    "Cache-Control": "public, max-age=3600"
+                }
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to fetch media: {str(e)}"
+        )
