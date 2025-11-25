@@ -31,9 +31,9 @@ class RoomPreview {
             0.1,
             1000
         );
-        // Position camera to view the room from an angle
-        this.camera.position.set(8, 6, 8);
-        this.camera.lookAt(0, 2, 0);
+        // Position camera inside the room at eye level
+        this.camera.position.set(0, 1.7, 0);
+        this.camera.lookAt(0, 1.7, -5);
 
         // Create renderer
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
@@ -426,12 +426,17 @@ class RoomPreview {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
 
-        // Slowly rotate the camera around the room
-        const time = Date.now() * 0.0002;
-        const radius = 10;
-        this.camera.position.x = Math.sin(time) * radius;
-        this.camera.position.z = Math.cos(time) * radius;
-        this.camera.lookAt(0, 2, 0);
+        // Camera stays inside the room and rotates to look around (360 view)
+        const time = Date.now() * 0.0003;
+        const lookRadius = 5;
+
+        // Camera stays at center, looks at different walls
+        this.camera.position.set(0, 1.7, 0);
+        this.camera.lookAt(
+            Math.sin(time) * lookRadius,
+            1.7,
+            Math.cos(time) * lookRadius
+        );
 
         this.renderer.render(this.scene, this.camera);
     }
