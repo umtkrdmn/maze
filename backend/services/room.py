@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 import random
 
@@ -48,29 +48,35 @@ class RoomService:
 
     async def find_random_room_by_doors(self, maze_id: int, door_count: int) -> Optional[Room]:
         """Find a random available room with the specified number of doors"""
-        # Build query for rooms with exact door count
-        # Count doors: door_north + door_south + door_east + door_west = door_count
+        # Get all unsold rooms in the maze
         result = await self.db.execute(
             select(Room)
             .where(
                 and_(
                     Room.maze_id == maze_id,
-                    Room.is_sold == False,
-                    # Cast booleans to int and sum them
-                    (Room.door_north.cast(func.int()) +
-                     Room.door_south.cast(func.int()) +
-                     Room.door_east.cast(func.int()) +
-                     Room.door_west.cast(func.int())) == door_count
+                    Room.is_sold == False
                 )
             )
         )
         rooms = result.scalars().all()
 
-        if not rooms:
+        # Filter by door count in Python
+        matching_rooms = []
+        for room in rooms:
+            actual_door_count = sum([
+                1 if room.door_north else 0,
+                1 if room.door_south else 0,
+                1 if room.door_east else 0,
+                1 if room.door_west else 0
+            ])
+            if actual_door_count == door_count:
+                matching_rooms.append(room)
+
+        if not matching_rooms:
             return None
 
         # Return a random room from the available ones
-        return random.choice(rooms)
+        return random.choice(matching_rooms)
 
     async def purchase_room(self, user: User, room: Room, price: float = None) -> Dict[str, Any]:
         """Purchase a room"""
