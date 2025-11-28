@@ -20,20 +20,24 @@ class RoomPreview {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
 
+        // Get canvas dimensions, use defaults if canvas is not visible yet
+        const width = this.canvas.clientWidth || 800;
+        const height = this.canvas.clientHeight || 600;
+
         // Create camera
         this.camera = new THREE.PerspectiveCamera(
             75,
-            this.canvas.clientWidth / this.canvas.clientHeight,
+            width / height,
             0.1,
             1000
         );
-        // Position camera to view the room from an angle
-        this.camera.position.set(8, 6, 8);
-        this.camera.lookAt(0, 2, 0);
+        // Position camera inside the room at eye level
+        this.camera.position.set(0, 1.7, 0);
+        this.camera.lookAt(0, 1.7, -5);
 
         // Create renderer
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-        this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        this.renderer.setSize(width, height);
         this.renderer.shadowMap.enabled = true;
 
         // Add lights
@@ -46,21 +50,39 @@ class RoomPreview {
         this.animate();
     }
 
+    // Public method to force resize update (call after modal becomes visible)
+    forceResize() {
+        this.onResize();
+    }
+
     addLights() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // Strong ambient light for overall visibility
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         this.scene.add(ambientLight);
 
-        // Directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(5, 10, 5);
+        // Directional light from above
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 10, 0);
         directionalLight.castShadow = true;
         this.scene.add(directionalLight);
 
-        // Point light for better visibility
-        const pointLight = new THREE.PointLight(0xffffff, 0.3);
-        pointLight.position.set(0, this.wallHeight - 1, 0);
-        this.scene.add(pointLight);
+        // Central point light (ceiling)
+        const ceilingLight = new THREE.PointLight(0xffffff, 0.8);
+        ceilingLight.position.set(0, this.wallHeight - 0.5, 0);
+        this.scene.add(ceilingLight);
+
+        // Additional point lights in corners for even illumination
+        const cornerPositions = [
+            [-3, 3, -3],
+            [3, 3, -3],
+            [-3, 3, 3],
+            [3, 3, 3]
+        ];
+        cornerPositions.forEach(pos => {
+            const light = new THREE.PointLight(0xffffff, 0.3);
+            light.position.set(...pos);
+            this.scene.add(light);
+        });
     }
 
     onResize() {
@@ -417,12 +439,17 @@ class RoomPreview {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
 
-        // Slowly rotate the camera around the room
-        const time = Date.now() * 0.0002;
-        const radius = 10;
-        this.camera.position.x = Math.sin(time) * radius;
-        this.camera.position.z = Math.cos(time) * radius;
-        this.camera.lookAt(0, 2, 0);
+        // Camera stays inside the room and rotates to look around (360 view)
+        const time = Date.now() * 0.0003;
+        const lookRadius = 5;
+
+        // Camera stays at center, looks at different walls
+        this.camera.position.set(0, 1.7, 0);
+        this.camera.lookAt(
+            Math.sin(time) * lookRadius,
+            1.7,
+            Math.cos(time) * lookRadius
+        );
 
         this.renderer.render(this.scene, this.camera);
     }
