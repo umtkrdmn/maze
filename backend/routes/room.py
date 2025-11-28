@@ -78,6 +78,7 @@ async def get_my_rooms(
                     "ceiling_color": r.design.ceiling_color if r.design else "#EEEEEE",
                     "ambient_light_color": r.design.ambient_light_color if r.design else "#FFFFFF",
                     "ambient_light_intensity": r.design.ambient_light_intensity if r.design else 0.5,
+                    "extra_features": r.design.extra_features if r.design else {},
                 } if r.design else {
                     "template": "default",
                     "wall_color": "#808080",
@@ -85,6 +86,7 @@ async def get_my_rooms(
                     "ceiling_color": "#EEEEEE",
                     "ambient_light_color": "#FFFFFF",
                     "ambient_light_intensity": 0.5,
+                    "extra_features": {},
                 },
                 "ads": [
                     {
