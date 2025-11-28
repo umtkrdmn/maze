@@ -227,94 +227,198 @@ class RoomService:
                 "wall_color": "#808080",
                 "floor_color": "#6B4E3D",
                 "ceiling_color": "#EEEEEE",
-                "ambient_light_intensity": 0.5
+                "ambient_light_intensity": 0.5,
+                "decorations": [
+                    {"type": "potted_plant", "position": [-3.5, 0, -3.5], "scale": [1, 1, 1], "color": "#228B22"},
+                    {"type": "floor_lamp", "position": [3.5, 0, -3.5], "scale": [1, 1, 1], "color": "#FFE4B5"}
+                ]
             },
             "halloween": {
                 "wall_color": "#2D1B2D",
                 "floor_color": "#1A1A1A",
                 "ceiling_color": "#0D0D0D",
                 "ambient_light_color": "#FF6600",
-                "ambient_light_intensity": 0.3
+                "ambient_light_intensity": 0.3,
+                "decorations": [
+                    {"type": "pumpkin", "position": [-3, 0, -3], "scale": [1.2, 1.2, 1.2], "color": "#FF6600", "properties": {"glowing": True}},
+                    {"type": "pumpkin", "position": [3.5, 0, 3], "scale": [0.8, 0.8, 0.8], "color": "#FF7518"},
+                    {"type": "bat", "position": [0, 3.5, -2], "scale": [0.6, 0.6, 0.6], "color": "#1A1A1A"},
+                    {"type": "bat", "position": [-2, 3.2, 1], "scale": [0.5, 0.5, 0.5], "color": "#2D2D2D"},
+                    {"type": "spider_web", "position": [-4.9, 3, -4.9], "scale": [2, 2, 0.1], "color": "#CCCCCC"},
+                    {"type": "cauldron", "position": [3, 0, -3], "scale": [1, 1, 1], "color": "#2F2F2F", "properties": {"bubbling": True, "smoke_color": "#00FF00"}}
+                ]
             },
             "christmas": {
                 "wall_color": "#C41E3A",
                 "floor_color": "#228B22",
                 "ceiling_color": "#FFFFFF",
                 "ambient_light_color": "#FFD700",
-                "ambient_light_intensity": 0.6
+                "ambient_light_intensity": 0.6,
+                "decorations": [
+                    {"type": "christmas_tree", "position": [-3, 0, -3], "scale": [1.5, 1.5, 1.5], "color": "#006400", "properties": {"lights": True, "star_color": "#FFD700"}},
+                    {"type": "gift_box", "position": [-2.5, 0, -2], "scale": [0.5, 0.5, 0.5], "color": "#FF0000", "properties": {"ribbon_color": "#FFD700"}},
+                    {"type": "gift_box", "position": [-3.5, 0, -1.8], "scale": [0.4, 0.6, 0.4], "color": "#00FF00", "properties": {"ribbon_color": "#FF0000"}},
+                    {"type": "gift_box", "position": [-2.8, 0, -1.5], "scale": [0.6, 0.4, 0.6], "color": "#0000FF", "properties": {"ribbon_color": "#FFFFFF"}},
+                    {"type": "snowman", "position": [3.5, 0, -3], "scale": [0.8, 0.8, 0.8], "color": "#FFFFFF"},
+                    {"type": "candy_cane", "position": [3.5, 0, 3], "scale": [1, 1, 1], "color": "#FF0000"},
+                    {"type": "string_lights", "position": [0, 3.8, 0], "scale": [10, 1, 10], "color": "#FF0000", "properties": {"colors": ["#FF0000", "#00FF00", "#FFD700", "#0000FF"]}}
+                ]
             },
             "modern_office": {
                 "wall_color": "#F5F5F5",
                 "floor_color": "#4A4A4A",
                 "ceiling_color": "#FFFFFF",
-                "ambient_light_intensity": 0.7
+                "ambient_light_intensity": 0.7,
+                "decorations": [
+                    {"type": "desk", "position": [0, 0, -3.5], "scale": [1, 1, 1], "color": "#8B4513"},
+                    {"type": "office_chair", "position": [0, 0, -2.5], "scale": [1, 1, 1], "color": "#1A1A1A"},
+                    {"type": "potted_plant", "position": [-3.5, 0, -3.5], "scale": [1.2, 1.2, 1.2], "color": "#228B22"},
+                    {"type": "desk_lamp", "position": [0.8, 0.8, -3.5], "scale": [0.5, 0.5, 0.5], "color": "#C0C0C0"},
+                    {"type": "water_cooler", "position": [3.5, 0, -3.5], "scale": [1, 1, 1], "color": "#ADD8E6"},
+                    {"type": "clock", "position": [0, 2.5, -4.9], "scale": [0.6, 0.6, 0.1], "color": "#FFFFFF"}
+                ]
             },
             "old_salon": {
                 "wall_color": "#8B4513",
                 "floor_color": "#654321",
                 "ceiling_color": "#DEB887",
                 "ambient_light_color": "#FFF8DC",
-                "ambient_light_intensity": 0.4
+                "ambient_light_intensity": 0.4,
+                "decorations": [
+                    {"type": "fireplace", "position": [0, 0, -4.5], "scale": [1.5, 1.5, 1], "color": "#8B0000", "properties": {"fire": True}},
+                    {"type": "chandelier", "position": [0, 3.5, 0], "scale": [1.2, 1, 1.2], "color": "#FFD700", "properties": {"candles": 6}},
+                    {"type": "grandfather_clock", "position": [-4, 0, 0], "scale": [1, 1, 0.5], "color": "#654321"},
+                    {"type": "armchair", "position": [-2, 0, -2], "scale": [1, 1, 1], "color": "#8B0000", "properties": {"rotation_y": 0.5}},
+                    {"type": "armchair", "position": [2, 0, -2], "scale": [1, 1, 1], "color": "#8B0000", "properties": {"rotation_y": -0.5}},
+                    {"type": "candelabra", "position": [3.5, 1, -4], "scale": [0.5, 0.5, 0.5], "color": "#C0C0C0", "properties": {"lit": True}}
+                ]
             },
             "spaceship": {
                 "wall_color": "#1C1C1C",
                 "floor_color": "#2F2F2F",
                 "ceiling_color": "#0A0A0A",
                 "ambient_light_color": "#00FFFF",
-                "ambient_light_intensity": 0.4
+                "ambient_light_intensity": 0.4,
+                "decorations": [
+                    {"type": "control_panel", "position": [0, 0.5, -4.5], "scale": [3, 1, 0.5], "color": "#1C1C1C", "properties": {"screen_color": "#00FFFF", "blinking": True}},
+                    {"type": "hologram", "position": [0, 1.5, 0], "scale": [1, 2, 1], "color": "#00FFFF", "properties": {"rotating": True, "shape": "globe"}},
+                    {"type": "light_tube", "position": [-4.8, 2, 0], "scale": [0.1, 3, 0.1], "color": "#00FFFF"},
+                    {"type": "light_tube", "position": [4.8, 2, 0], "scale": [0.1, 3, 0.1], "color": "#00FFFF"},
+                    {"type": "cryopod", "position": [3.5, 0, -3], "scale": [1, 2, 1], "color": "#4169E1", "properties": {"frost": True}},
+                    {"type": "robot", "position": [-3.5, 0, 3], "scale": [0.8, 0.8, 0.8], "color": "#C0C0C0"}
+                ]
             },
             "underwater": {
                 "wall_color": "#006994",
                 "floor_color": "#0077BE",
                 "ceiling_color": "#00CED1",
                 "ambient_light_color": "#40E0D0",
-                "ambient_light_intensity": 0.5
+                "ambient_light_intensity": 0.5,
+                "decorations": [
+                    {"type": "coral", "position": [-3, 0, -3], "scale": [1.5, 1.5, 1.5], "color": "#FF6B6B"},
+                    {"type": "coral", "position": [3.5, 0, -2], "scale": [1, 1.2, 1], "color": "#FF69B4"},
+                    {"type": "seashell", "position": [2, 0, 3], "scale": [0.8, 0.8, 0.8], "color": "#FFF5EE"},
+                    {"type": "starfish", "position": [-2, 0.01, 2], "scale": [0.6, 0.1, 0.6], "color": "#FF4500"},
+                    {"type": "bubbles", "position": [0, 2, 0], "scale": [5, 4, 5], "color": "#87CEEB", "properties": {"animated": True}},
+                    {"type": "fish", "position": [2, 2.5, -1], "scale": [0.5, 0.5, 0.5], "color": "#FFD700", "properties": {"swimming": True}},
+                    {"type": "fish", "position": [-1, 2, 2], "scale": [0.4, 0.4, 0.4], "color": "#FF6347", "properties": {"swimming": True}},
+                    {"type": "treasure_chest", "position": [3.5, 0, 3], "scale": [0.8, 0.8, 0.8], "color": "#8B4513", "properties": {"open": True, "gold": True}}
+                ]
             },
             "forest": {
                 "wall_color": "#228B22",
                 "floor_color": "#3D2914",
                 "ceiling_color": "#90EE90",
                 "ambient_light_color": "#ADFF2F",
-                "ambient_light_intensity": 0.5
+                "ambient_light_intensity": 0.5,
+                "decorations": [
+                    {"type": "tree_stump", "position": [-3, 0, -3], "scale": [1.2, 0.8, 1.2], "color": "#8B4513"},
+                    {"type": "mushroom", "position": [-2, 0, -2], "scale": [0.5, 0.5, 0.5], "color": "#FF0000", "properties": {"spots": True}},
+                    {"type": "mushroom", "position": [3, 0, -3.5], "scale": [0.7, 0.7, 0.7], "color": "#DEB887"},
+                    {"type": "mushroom", "position": [3.5, 0, -3], "scale": [0.4, 0.4, 0.4], "color": "#FFD700"},
+                    {"type": "fern", "position": [3.5, 0, 3], "scale": [1.5, 1.5, 1.5], "color": "#228B22"},
+                    {"type": "rock", "position": [-3.5, 0, 3], "scale": [1, 0.6, 1], "color": "#696969"},
+                    {"type": "fireflies", "position": [0, 2, 0], "scale": [5, 3, 5], "color": "#FFFF00", "properties": {"animated": True, "count": 20}},
+                    {"type": "bird", "position": [2, 3, -2], "scale": [0.4, 0.4, 0.4], "color": "#FF6347"}
+                ]
             },
             "desert": {
                 "wall_color": "#EDC9AF",
                 "floor_color": "#C2B280",
                 "ceiling_color": "#87CEEB",
                 "ambient_light_color": "#FFD700",
-                "ambient_light_intensity": 0.8
+                "ambient_light_intensity": 0.8,
+                "decorations": [
+                    {"type": "cactus", "position": [-3, 0, -3], "scale": [1.5, 2, 1.5], "color": "#228B22"},
+                    {"type": "cactus", "position": [3.5, 0, -2], "scale": [1, 1.5, 1], "color": "#2E8B57"},
+                    {"type": "sand_dune", "position": [3, 0, 3], "scale": [2, 0.5, 2], "color": "#DEB887"},
+                    {"type": "skull", "position": [-2, 0.1, 2], "scale": [0.4, 0.4, 0.4], "color": "#FFFFF0"},
+                    {"type": "tumbleweed", "position": [0, 0.3, 0], "scale": [0.6, 0.6, 0.6], "color": "#D2B48C"},
+                    {"type": "pottery", "position": [-3.5, 0, 3], "scale": [0.8, 1, 0.8], "color": "#CD853F"},
+                    {"type": "sun", "position": [0, 4, -4], "scale": [1, 1, 0.1], "color": "#FFD700", "properties": {"glowing": True}}
+                ]
             },
             "cyberpunk": {
                 "wall_color": "#0D0D0D",
                 "floor_color": "#1A1A2E",
                 "ceiling_color": "#16213E",
                 "ambient_light_color": "#FF00FF",
-                "ambient_light_intensity": 0.4
+                "ambient_light_intensity": 0.4,
+                "decorations": [
+                    {"type": "neon_sign", "position": [0, 2.5, -4.9], "scale": [3, 1, 0.1], "color": "#FF00FF", "properties": {"text": "CYBER", "flicker": True}},
+                    {"type": "neon_tube", "position": [-4.8, 2, -2], "scale": [0.1, 0.1, 3], "color": "#00FFFF"},
+                    {"type": "neon_tube", "position": [4.8, 1.5, 0], "scale": [0.1, 0.1, 4], "color": "#FF00FF"},
+                    {"type": "holographic_screen", "position": [3, 1.5, -3], "scale": [1.5, 1, 0.1], "color": "#00FFFF", "properties": {"animated": True}},
+                    {"type": "robot_parts", "position": [-3, 0, -3], "scale": [1, 1, 1], "color": "#C0C0C0"},
+                    {"type": "server_rack", "position": [-4, 0, 0], "scale": [0.8, 2, 0.5], "color": "#1A1A1A", "properties": {"lights": True}},
+                    {"type": "drone", "position": [2, 2.5, 2], "scale": [0.5, 0.3, 0.5], "color": "#333333", "properties": {"hovering": True}}
+                ]
             },
             "medieval": {
                 "wall_color": "#696969",
                 "floor_color": "#4A4A4A",
                 "ceiling_color": "#2F2F2F",
                 "ambient_light_color": "#FFA500",
-                "ambient_light_intensity": 0.3
+                "ambient_light_intensity": 0.3,
+                "decorations": [
+                    {"type": "torch", "position": [-4.8, 2, -2], "scale": [0.3, 0.5, 0.3], "color": "#8B4513", "properties": {"fire": True}},
+                    {"type": "torch", "position": [4.8, 2, -2], "scale": [0.3, 0.5, 0.3], "color": "#8B4513", "properties": {"fire": True}},
+                    {"type": "armor_stand", "position": [-3.5, 0, -3.5], "scale": [1, 1.8, 1], "color": "#C0C0C0"},
+                    {"type": "barrel", "position": [3.5, 0, 3], "scale": [0.7, 1, 0.7], "color": "#8B4513"},
+                    {"type": "barrel", "position": [3, 0, 3.5], "scale": [0.6, 0.9, 0.6], "color": "#A0522D"},
+                    {"type": "banner", "position": [0, 2.5, -4.9], "scale": [1, 2, 0.1], "color": "#8B0000", "properties": {"emblem": "lion"}},
+                    {"type": "sword_display", "position": [4, 1.5, 0], "scale": [0.2, 1.5, 0.1], "color": "#C0C0C0"},
+                    {"type": "chest", "position": [-3, 0, 3], "scale": [1, 0.7, 0.6], "color": "#654321"}
+                ]
             }
         }
 
         if template not in template_styles:
             return {"success": False, "error": "Invalid template"}
 
-        style = template_styles[template]
+        style = template_styles[template].copy()
         design = room.design
         if not design:
             design = RoomDesign(room_id=room.id)
             self.db.add(design)
 
         design.template = template
+
+        # Extract decorations for extra_features
+        decorations = style.pop("decorations", [])
+
+        # Apply style properties
         for key, value in style.items():
             setattr(design, key, value)
 
+        # Store decorations in extra_features
+        if decorations:
+            current_extra = design.extra_features or {}
+            current_extra["decorations"] = decorations
+            design.extra_features = current_extra
+
         await self.db.commit()
-        return {"success": True, "template": template}
+        return {"success": True, "template": template, "decorations": decorations}
 
     async def get_available_rooms(self, maze_id: int) -> List[Room]:
         """Get all unsold rooms in a maze"""
