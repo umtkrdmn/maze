@@ -52,6 +52,24 @@ class RoomPreview {
 
     // Public method to force resize update (call after modal becomes visible)
     forceResize() {
+        // Get the parent container dimensions
+        const parent = this.canvas.parentElement;
+        if (parent) {
+            const rect = parent.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                // Set canvas size to match parent
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+
+                // Update renderer and camera
+                this.renderer.setSize(rect.width, rect.height);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.camera.aspect = rect.width / rect.height;
+                this.camera.updateProjectionMatrix();
+                return;
+            }
+        }
+        // Fallback to standard resize
         this.onResize();
     }
 
@@ -86,11 +104,25 @@ class RoomPreview {
     }
 
     onResize() {
-        if (!this.canvas.clientWidth || !this.canvas.clientHeight) return;
+        // Try to get dimensions from parent first
+        const parent = this.canvas.parentElement;
+        let width, height;
 
-        this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+        if (parent) {
+            const rect = parent.getBoundingClientRect();
+            width = rect.width || this.canvas.clientWidth;
+            height = rect.height || this.canvas.clientHeight;
+        } else {
+            width = this.canvas.clientWidth;
+            height = this.canvas.clientHeight;
+        }
+
+        if (!width || !height) return;
+
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     }
 
     clearRoom() {
