@@ -94,10 +94,15 @@ class Renderer {
         const room = this.currentRoom;
         const halfSize = this.roomSize / 2;
 
+        // Design'dan renkleri al (varsayılan değerlerle)
+        const design = room.design || {};
+        const floorColor = design.floor_color || '#6B4E3D';
+        const ceilingColor = design.ceiling_color || '#EEEEEE';
+
         // Zemin (Ahşap parke)
         const floorGeometry = new THREE.PlaneGeometry(this.roomSize, this.roomSize);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x6B4E3D, // Koyu kahverengi ahşap
+            color: floorColor,
             roughness: 0.8,
             metalness: 0.05
         });
@@ -113,7 +118,7 @@ class Renderer {
         // Tavan
         const ceilingGeometry = new THREE.PlaneGeometry(this.roomSize, this.roomSize);
         const ceilingMaterial = new THREE.MeshStandardMaterial({
-            color: 0xEEEEEE,
+            color: ceilingColor,
             side: THREE.DoubleSide
         });
         const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
@@ -370,8 +375,12 @@ class Renderer {
     }
 
     createWall(direction, hasDoor, x, z, room) {
+        // Design'dan duvar rengini al
+        const design = room.design || {};
+        const wallColor = design.wall_color || '#5A6A75';
+
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x5A6A75, // Koyu gri-mavi duvar
+            color: wallColor,
             roughness: 0.9,
             metalness: 0.02
         });

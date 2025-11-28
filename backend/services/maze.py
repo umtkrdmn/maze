@@ -448,7 +448,8 @@ class MazeService:
                 "door_handle_type": room.design.door_handle_type if room.design else "gold_round",
                 "baseboard_color": room.design.baseboard_color if room.design else "#4A3728",
                 "ambient_light_color": room.design.ambient_light_color if room.design else "#FFFFFF",
-                "ambient_light_intensity": room.design.ambient_light_intensity if room.design else 0.5
+                "ambient_light_intensity": room.design.ambient_light_intensity if room.design else 0.5,
+                "extra_features": room.design.extra_features if room.design else {}
             } if room.design else None,
             "ads": ads_dict,
             "wallTextures": wallTextures_dict
