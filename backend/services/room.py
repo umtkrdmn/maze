@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 import random
 
 from models.maze import Room, RoomDesign, RoomAd, RoomTemplate
@@ -413,9 +414,12 @@ class RoomService:
 
         # Store decorations in extra_features
         if decorations:
-            current_extra = design.extra_features or {}
-            current_extra["decorations"] = decorations
-            design.extra_features = current_extra
+            # Create a new dict to ensure SQLAlchemy detects the change
+            new_extra = dict(design.extra_features or {})
+            new_extra["decorations"] = decorations
+            design.extra_features = new_extra
+            # Explicitly mark the JSON field as modified
+            flag_modified(design, "extra_features")
 
         await self.db.commit()
         return {"success": True, "template": template, "decorations": decorations}
