@@ -183,8 +183,22 @@ class MyRoomsManager {
         // Show edit flow
         this.showEditFlow(room);
 
+        // If design has a template but no decorations, get decorations from template
+        let designToRender = room.design;
+        if (room.design && room.design.template) {
+            const hasDecorations = room.design.extra_features?.decorations?.length > 0;
+            if (!hasDecorations) {
+                // Get template decorations and merge with existing design
+                const templateDesign = this.getTemplateDesign(room.design.template);
+                designToRender = {
+                    ...room.design,
+                    extra_features: templateDesign.extra_features
+                };
+            }
+        }
+
         // Render room in 3D
-        this.roomPreview.renderRoom(room, room.design);
+        this.roomPreview.renderRoom(room, designToRender);
     }
 
     async startPurchaseFlow() {
