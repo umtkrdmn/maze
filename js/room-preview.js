@@ -12,6 +12,17 @@ class RoomPreview {
         this.wallHeight = 5;
         this.animationId = null;
 
+        // Drag-and-drop properties
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+        this.draggableObjects = [];  // Meshes that can be dragged
+        this.decorationDataMap = new Map();  // Map mesh to decoration data
+        this.selectedObject = null;
+        this.isDragging = false;
+        this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);  // Horizontal plane
+        this.dragOffset = new THREE.Vector3();
+        this.onDecorationMoved = null;  // Callback when decoration is moved
+
         this.init();
     }
 
@@ -45,6 +56,17 @@ class RoomPreview {
 
         // Handle window resize
         window.addEventListener('resize', () => this.onResize());
+
+        // Add drag-and-drop event listeners
+        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+
+        // Touch support
+        this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
+        this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e));
+        this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e));
 
         // Start animation loop
         this.animate();
@@ -139,6 +161,12 @@ class RoomPreview {
             this.scene.remove(mesh);
         });
         this.currentRoomMeshes = [];
+
+        // Clear drag-and-drop data
+        this.draggableObjects = [];
+        this.decorationDataMap.clear();
+        this.selectedObject = null;
+        this.isDragging = false;
     }
 
     renderRoom(roomData, design = {}) {
@@ -394,6 +422,12 @@ class RoomPreview {
             mesh.scale.set(scale[0], scale[1], scale[2]);
             this.scene.add(mesh);
             this.currentRoomMeshes.push(mesh);
+
+            // Make decoration draggable
+            mesh.userData.isDraggable = true;
+            mesh.userData.decorationData = deco;
+            this.draggableObjects.push(mesh);
+            this.decorationDataMap.set(mesh, deco);
         }
     }
 
@@ -2397,6 +2431,203 @@ class RoomPreview {
         );
 
         this.renderer.render(this.scene, this.camera);
+    }
+
+    // === DRAG AND DROP METHODS ===
+
+    getMousePosition(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    onMouseDown(event) {
+        event.preventDefault();
+        this.getMousePosition(event);
+
+        // Raycast to find draggable objects
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // We need to check all children of draggable groups, not just top-level meshes
+        const allDraggableChildren = [];
+        this.draggableObjects.forEach(obj => {
+            if (obj.type === 'Group') {
+                obj.traverse(child => {
+                    if (child.isMesh) {
+                        child.userData.parentDraggable = obj;
+                        allDraggableChildren.push(child);
+                    }
+                });
+            } else {
+                allDraggableChildren.push(obj);
+            }
+        });
+
+        const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
+
+        if (intersects.length > 0) {
+            // Get the top-level draggable object
+            let hitObject = intersects[0].object;
+            if (hitObject.userData.parentDraggable) {
+                hitObject = hitObject.userData.parentDraggable;
+            } else {
+                // Find the parent that is in draggableObjects
+                while (hitObject.parent && !this.draggableObjects.includes(hitObject)) {
+                    hitObject = hitObject.parent;
+                }
+            }
+
+            if (this.draggableObjects.includes(hitObject)) {
+                this.selectedObject = hitObject;
+                this.isDragging = true;
+
+                // Update drag plane to be at the object's Y position
+                this.dragPlane.constant = -hitObject.position.y;
+
+                // Calculate offset
+                const intersection = new THREE.Vector3();
+                this.raycaster.ray.intersectPlane(this.dragPlane, intersection);
+                this.dragOffset.copy(hitObject.position).sub(intersection);
+
+                // Change cursor
+                this.canvas.style.cursor = 'grabbing';
+
+                // Highlight selected object
+                this.highlightObject(hitObject, true);
+            }
+        }
+    }
+
+    onMouseMove(event) {
+        event.preventDefault();
+        this.getMousePosition(event);
+
+        if (this.isDragging && this.selectedObject) {
+            // Move object on horizontal plane
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const intersection = new THREE.Vector3();
+            if (this.raycaster.ray.intersectPlane(this.dragPlane, intersection)) {
+                const newX = intersection.x + this.dragOffset.x;
+                const newZ = intersection.z + this.dragOffset.z;
+
+                // Clamp to room bounds (with some margin)
+                const margin = 0.5;
+                const maxPos = (this.roomSize / 2) - margin;
+                this.selectedObject.position.x = Math.max(-maxPos, Math.min(maxPos, newX));
+                this.selectedObject.position.z = Math.max(-maxPos, Math.min(maxPos, newZ));
+
+                // Update decoration data
+                const decoData = this.decorationDataMap.get(this.selectedObject);
+                if (decoData) {
+                    decoData.position[0] = this.selectedObject.position.x;
+                    decoData.position[2] = this.selectedObject.position.z;
+                }
+            }
+        } else {
+            // Hover effect
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const allDraggableChildren = [];
+            this.draggableObjects.forEach(obj => {
+                if (obj.type === 'Group') {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            child.userData.parentDraggable = obj;
+                            allDraggableChildren.push(child);
+                        }
+                    });
+                } else {
+                    allDraggableChildren.push(obj);
+                }
+            });
+
+            const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
+            if (intersects.length > 0) {
+                this.canvas.style.cursor = 'grab';
+            } else {
+                this.canvas.style.cursor = 'default';
+            }
+        }
+    }
+
+    onMouseUp(event) {
+        if (this.isDragging && this.selectedObject) {
+            // Remove highlight
+            this.highlightObject(this.selectedObject, false);
+
+            // Notify callback
+            if (this.onDecorationMoved) {
+                this.onDecorationMoved(this.getUpdatedDecorations());
+            }
+        }
+
+        this.isDragging = false;
+        this.selectedObject = null;
+        this.canvas.style.cursor = 'default';
+    }
+
+    // Touch support
+    onTouchStart(event) {
+        if (event.touches.length === 1) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            this.onMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        }
+    }
+
+    onTouchMove(event) {
+        if (event.touches.length === 1 && this.isDragging) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        }
+    }
+
+    onTouchEnd(event) {
+        this.onMouseUp(event);
+    }
+
+    highlightObject(object, highlight) {
+        const emissiveColor = highlight ? 0x444444 : 0x000000;
+
+        if (object.type === 'Group') {
+            object.traverse(child => {
+                if (child.isMesh && child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.emissive) m.emissive.setHex(emissiveColor);
+                        });
+                    } else if (child.material.emissive) {
+                        child.material.emissive.setHex(emissiveColor);
+                    }
+                }
+            });
+        } else if (object.isMesh && object.material) {
+            if (Array.isArray(object.material)) {
+                object.material.forEach(m => {
+                    if (m.emissive) m.emissive.setHex(emissiveColor);
+                });
+            } else if (object.material.emissive) {
+                object.material.emissive.setHex(emissiveColor);
+            }
+        }
+    }
+
+    getUpdatedDecorations() {
+        const decorations = [];
+        this.decorationDataMap.forEach((data, mesh) => {
+            decorations.push({
+                ...data,
+                position: [mesh.position.x, mesh.position.y, mesh.position.z]
+            });
+        });
+        return decorations;
+    }
+
+    // Set callback for when decorations are moved
+    setOnDecorationMoved(callback) {
+        this.onDecorationMoved = callback;
     }
 
     destroy() {
