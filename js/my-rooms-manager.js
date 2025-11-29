@@ -705,6 +705,15 @@ class MyRoomsManager {
                     this.selectedRoom.design.template = template.name;
                     this.roomPreview.renderRoom(this.selectedRoom, this.selectedRoom.design);
 
+                    // Renk panelini güncelle
+                    const wallColorInput = document.getElementById('edit-wall-color');
+                    const floorColorInput = document.getElementById('edit-floor-color');
+                    const ceilingColorInput = document.getElementById('edit-ceiling-color');
+
+                    if (wallColorInput) wallColorInput.value = this.selectedRoom.design.wall_color || '#E8E8E8';
+                    if (floorColorInput) floorColorInput.value = this.selectedRoom.design.floor_color || '#6B4E3D';
+                    if (ceilingColorInput) ceilingColorInput.value = this.selectedRoom.design.ceiling_color || '#EEEEEE';
+
                     document.querySelectorAll('#edit-templates .template-option').forEach(opt => {
                         opt.classList.remove('selected');
                     });
