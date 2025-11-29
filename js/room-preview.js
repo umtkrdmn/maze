@@ -23,6 +23,16 @@ class RoomPreview {
         this.dragOffset = new THREE.Vector3();
         this.onDecorationMoved = null;  // Callback when decoration is moved
 
+        // FPS-style camera controls
+        this.moveSpeed = 0.08;
+        this.lookSpeed = 0.002;
+        this.keys = { w: false, a: false, s: false, d: false };
+        this.yaw = 0;    // Horizontal rotation (left-right)
+        this.pitch = 0;  // Vertical rotation (up-down)
+        this.isLooking = false;  // True when right mouse button is held
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+
         this.init();
     }
 
@@ -57,11 +67,16 @@ class RoomPreview {
         // Handle window resize
         window.addEventListener('resize', () => this.onResize());
 
-        // Add drag-and-drop event listeners
+        // Keyboard controls for movement (WASD)
+        window.addEventListener('keydown', (e) => this.onKeyDown(e));
+        window.addEventListener('keyup', (e) => this.onKeyUp(e));
+
+        // Mouse controls - left click for dragging, right click for looking
         this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
         this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());  // Disable right-click menu
 
         // Touch support
         this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
@@ -171,6 +186,12 @@ class RoomPreview {
 
     renderRoom(roomData, design = {}) {
         this.clearRoom();
+
+        // Reset camera to center of room
+        this.camera.position.set(0, 1.7, 0);
+        this.yaw = 0;
+        this.pitch = 0;
+        this.updateCameraRotation();
 
         // Extract room properties
         const doors = {
@@ -2418,22 +2439,77 @@ class RoomPreview {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
 
-        // Camera stays inside the room and rotates to look around (360 view)
-        const time = Date.now() * 0.0003;
-        const lookRadius = 5;
+        // Process WASD movement
+        this.processMovement();
 
-        // Camera stays at center, looks at different walls
-        this.camera.position.set(0, 1.7, 0);
-        this.camera.lookAt(
-            Math.sin(time) * lookRadius,
-            1.7,
-            Math.cos(time) * lookRadius
-        );
+        // Update camera rotation based on yaw and pitch
+        this.updateCameraRotation();
 
         this.renderer.render(this.scene, this.camera);
     }
 
-    // === DRAG AND DROP METHODS ===
+    processMovement() {
+        // Calculate forward and right vectors based on yaw
+        const forward = new THREE.Vector3(
+            -Math.sin(this.yaw),
+            0,
+            -Math.cos(this.yaw)
+        );
+        const right = new THREE.Vector3(
+            Math.cos(this.yaw),
+            0,
+            -Math.sin(this.yaw)
+        );
+
+        // Apply movement based on keys pressed
+        const movement = new THREE.Vector3();
+
+        if (this.keys.w) movement.add(forward);
+        if (this.keys.s) movement.sub(forward);
+        if (this.keys.d) movement.add(right);
+        if (this.keys.a) movement.sub(right);
+
+        if (movement.length() > 0) {
+            movement.normalize().multiplyScalar(this.moveSpeed);
+
+            // Calculate new position
+            const newX = this.camera.position.x + movement.x;
+            const newZ = this.camera.position.z + movement.z;
+
+            // Clamp to room bounds (with margin for walls)
+            const margin = 0.5;
+            const maxPos = (this.roomSize / 2) - margin;
+
+            this.camera.position.x = Math.max(-maxPos, Math.min(maxPos, newX));
+            this.camera.position.z = Math.max(-maxPos, Math.min(maxPos, newZ));
+        }
+    }
+
+    updateCameraRotation() {
+        // Create rotation from yaw and pitch
+        const euler = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
+        this.camera.quaternion.setFromEuler(euler);
+    }
+
+    onKeyDown(event) {
+        // Only process if canvas is visible/active
+        if (!this.canvas.offsetParent) return;
+
+        const key = event.key.toLowerCase();
+        if (key in this.keys) {
+            this.keys[key] = true;
+            event.preventDefault();
+        }
+    }
+
+    onKeyUp(event) {
+        const key = event.key.toLowerCase();
+        if (key in this.keys) {
+            this.keys[key] = false;
+        }
+    }
+
+    // === DRAG AND DROP + CAMERA LOOK METHODS ===
 
     getMousePosition(event) {
         const rect = this.canvas.getBoundingClientRect();
@@ -2443,65 +2519,96 @@ class RoomPreview {
 
     onMouseDown(event) {
         event.preventDefault();
-        this.getMousePosition(event);
 
-        // Raycast to find draggable objects
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        // Right-click: start looking mode
+        if (event.button === 2) {
+            this.isLooking = true;
+            this.lastMouseX = event.clientX;
+            this.lastMouseY = event.clientY;
+            this.canvas.style.cursor = 'move';
+            return;
+        }
 
-        // We need to check all children of draggable groups, not just top-level meshes
-        const allDraggableChildren = [];
-        this.draggableObjects.forEach(obj => {
-            if (obj.type === 'Group') {
-                obj.traverse(child => {
-                    if (child.isMesh) {
-                        child.userData.parentDraggable = obj;
-                        allDraggableChildren.push(child);
-                    }
-                });
-            } else {
-                allDraggableChildren.push(obj);
-            }
-        });
+        // Left-click: drag objects
+        if (event.button === 0) {
+            this.getMousePosition(event);
 
-        const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
+            // Raycast to find draggable objects
+            this.raycaster.setFromCamera(this.mouse, this.camera);
 
-        if (intersects.length > 0) {
-            // Get the top-level draggable object
-            let hitObject = intersects[0].object;
-            if (hitObject.userData.parentDraggable) {
-                hitObject = hitObject.userData.parentDraggable;
-            } else {
-                // Find the parent that is in draggableObjects
-                while (hitObject.parent && !this.draggableObjects.includes(hitObject)) {
-                    hitObject = hitObject.parent;
+            // We need to check all children of draggable groups, not just top-level meshes
+            const allDraggableChildren = [];
+            this.draggableObjects.forEach(obj => {
+                if (obj.type === 'Group') {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            child.userData.parentDraggable = obj;
+                            allDraggableChildren.push(child);
+                        }
+                    });
+                } else {
+                    allDraggableChildren.push(obj);
                 }
-            }
+            });
 
-            if (this.draggableObjects.includes(hitObject)) {
-                this.selectedObject = hitObject;
-                this.isDragging = true;
+            const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
 
-                // Update drag plane to be at the object's Y position
-                this.dragPlane.constant = -hitObject.position.y;
+            if (intersects.length > 0) {
+                // Get the top-level draggable object
+                let hitObject = intersects[0].object;
+                if (hitObject.userData.parentDraggable) {
+                    hitObject = hitObject.userData.parentDraggable;
+                } else {
+                    // Find the parent that is in draggableObjects
+                    while (hitObject.parent && !this.draggableObjects.includes(hitObject)) {
+                        hitObject = hitObject.parent;
+                    }
+                }
 
-                // Calculate offset
-                const intersection = new THREE.Vector3();
-                this.raycaster.ray.intersectPlane(this.dragPlane, intersection);
-                this.dragOffset.copy(hitObject.position).sub(intersection);
+                if (this.draggableObjects.includes(hitObject)) {
+                    this.selectedObject = hitObject;
+                    this.isDragging = true;
 
-                // Change cursor
-                this.canvas.style.cursor = 'grabbing';
+                    // Update drag plane to be at the object's Y position
+                    this.dragPlane.constant = -hitObject.position.y;
 
-                // Highlight selected object
-                this.highlightObject(hitObject, true);
+                    // Calculate offset
+                    const intersection = new THREE.Vector3();
+                    this.raycaster.ray.intersectPlane(this.dragPlane, intersection);
+                    this.dragOffset.copy(hitObject.position).sub(intersection);
+
+                    // Change cursor
+                    this.canvas.style.cursor = 'grabbing';
+
+                    // Highlight selected object
+                    this.highlightObject(hitObject, true);
+                }
             }
         }
     }
 
     onMouseMove(event) {
         event.preventDefault();
+
+        // Camera look mode (right-click held)
+        if (this.isLooking) {
+            const deltaX = event.clientX - this.lastMouseX;
+            const deltaY = event.clientY - this.lastMouseY;
+
+            this.yaw -= deltaX * this.lookSpeed;
+            this.pitch -= deltaY * this.lookSpeed;
+
+            // Clamp pitch to prevent flipping
+            this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+
+            this.lastMouseX = event.clientX;
+            this.lastMouseY = event.clientY;
+            return;
+        }
+
         this.getMousePosition(event);
 
+        // Object dragging mode (left-click held)
         if (this.isDragging && this.selectedObject) {
             // Move object on horizontal plane
             this.raycaster.setFromCamera(this.mouse, this.camera);
@@ -2546,12 +2653,19 @@ class RoomPreview {
             if (intersects.length > 0) {
                 this.canvas.style.cursor = 'grab';
             } else {
-                this.canvas.style.cursor = 'default';
+                this.canvas.style.cursor = 'crosshair';
             }
         }
     }
 
     onMouseUp(event) {
+        // Stop looking mode
+        if (this.isLooking) {
+            this.isLooking = false;
+            this.canvas.style.cursor = 'crosshair';
+        }
+
+        // Stop dragging mode
         if (this.isDragging && this.selectedObject) {
             // Remove highlight
             this.highlightObject(this.selectedObject, false);
@@ -2564,20 +2678,38 @@ class RoomPreview {
 
         this.isDragging = false;
         this.selectedObject = null;
-        this.canvas.style.cursor = 'default';
     }
 
-    // Touch support
+    // Touch support - single touch drags, two-finger touch looks
     onTouchStart(event) {
+        event.preventDefault();
         if (event.touches.length === 1) {
-            event.preventDefault();
             const touch = event.touches[0];
-            this.onMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+            this.onMouseDown({ button: 0, clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        } else if (event.touches.length === 2) {
+            // Two-finger touch starts look mode
+            this.isLooking = true;
+            const touch = event.touches[0];
+            this.lastMouseX = touch.clientX;
+            this.lastMouseY = touch.clientY;
         }
     }
 
     onTouchMove(event) {
-        if (event.touches.length === 1 && this.isDragging) {
+        event.preventDefault();
+        if (event.touches.length === 2 && this.isLooking) {
+            // Two-finger drag for looking
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - this.lastMouseX;
+            const deltaY = touch.clientY - this.lastMouseY;
+
+            this.yaw -= deltaX * this.lookSpeed;
+            this.pitch -= deltaY * this.lookSpeed;
+            this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+
+            this.lastMouseX = touch.clientX;
+            this.lastMouseY = touch.clientY;
+        } else if (event.touches.length === 1 && this.isDragging) {
             event.preventDefault();
             const touch = event.touches[0];
             this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
