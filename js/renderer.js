@@ -94,10 +94,15 @@ class Renderer {
         const room = this.currentRoom;
         const halfSize = this.roomSize / 2;
 
+        // Design'dan renkleri al (varsayılan değerlerle)
+        const design = room.design || {};
+        const floorColor = design.floor_color || '#6B4E3D';
+        const ceilingColor = design.ceiling_color || '#EEEEEE';
+
         // Zemin (Ahşap parke)
         const floorGeometry = new THREE.PlaneGeometry(this.roomSize, this.roomSize);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x6B4E3D, // Koyu kahverengi ahşap
+            color: floorColor,
             roughness: 0.8,
             metalness: 0.05
         });
@@ -113,7 +118,7 @@ class Renderer {
         // Tavan
         const ceilingGeometry = new THREE.PlaneGeometry(this.roomSize, this.roomSize);
         const ceilingMaterial = new THREE.MeshStandardMaterial({
-            color: 0xEEEEEE,
+            color: ceilingColor,
             side: THREE.DoubleSide
         });
         const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
@@ -127,6 +132,111 @@ class Renderer {
         this.createWall('south', room.doors.south, 0, halfSize, room);
         this.createWall('east', room.doors.east, halfSize, 0, room);
         this.createWall('west', room.doors.west, -halfSize, 0, room);
+
+        // Dekorasyonları ekle
+        this.renderDecorations(room);
+    }
+
+    renderDecorations(room) {
+        // Design verisi varsa ve dekorasyonlar tanımlıysa render et
+        const decorations = room.design?.extra_features?.decorations || [];
+        decorations.forEach(deco => {
+            const mesh = this.createDecoration(deco);
+            if (mesh) {
+                mesh.position.set(deco.position[0], deco.position[1], deco.position[2]);
+                mesh.scale.set(deco.scale[0], deco.scale[1], deco.scale[2]);
+                this.scene.add(mesh);
+                this.currentRoomMeshes.push(mesh);
+            }
+        });
+    }
+
+    createDecoration(deco) {
+        const { type, color, properties } = deco;
+
+        switch (type) {
+            // === CHRISTMAS DECORATIONS ===
+            case 'christmas_tree': return this.createChristmasTree(color, properties);
+            case 'gift_box': return this.createGiftBox(color, properties);
+            case 'snowman': return this.createSnowman(color);
+            case 'candy_cane': return this.createCandyCane(color);
+            case 'string_lights': return this.createStringLights(properties);
+
+            // === HALLOWEEN DECORATIONS ===
+            case 'pumpkin': return this.createPumpkin(color, properties);
+            case 'bat': return this.createBat(color);
+            case 'spider_web': return this.createSpiderWeb(color);
+            case 'cauldron': return this.createCauldron(color, properties);
+
+            // === OFFICE DECORATIONS ===
+            case 'desk': return this.createDesk(color);
+            case 'office_chair': return this.createOfficeChair(color);
+            case 'desk_lamp': return this.createDeskLamp(color);
+            case 'water_cooler': return this.createWaterCooler(color);
+            case 'clock': return this.createClock(color);
+
+            // === OLD SALON DECORATIONS ===
+            case 'fireplace': return this.createFireplace(color, properties);
+            case 'chandelier': return this.createChandelier(color, properties);
+            case 'grandfather_clock': return this.createGrandfatherClock(color);
+            case 'armchair': return this.createArmchair(color, properties);
+            case 'candelabra': return this.createCandelabra(color, properties);
+
+            // === SPACESHIP DECORATIONS ===
+            case 'control_panel': return this.createControlPanel(color, properties);
+            case 'hologram': return this.createHologram(color, properties);
+            case 'light_tube': return this.createLightTube(color);
+            case 'cryopod': return this.createCryopod(color, properties);
+            case 'robot': return this.createRobot(color);
+
+            // === UNDERWATER DECORATIONS ===
+            case 'coral': return this.createCoral(color);
+            case 'seashell': return this.createSeashell(color);
+            case 'starfish': return this.createStarfish(color);
+            case 'bubbles': return this.createBubbles(color, properties);
+            case 'fish': return this.createFish(color, properties);
+            case 'treasure_chest': return this.createTreasureChest(color, properties);
+
+            // === FOREST DECORATIONS ===
+            case 'tree_stump': return this.createTreeStump(color);
+            case 'mushroom': return this.createMushroom(color, properties);
+            case 'fern': return this.createFern(color);
+            case 'rock': return this.createRock(color);
+            case 'fireflies': return this.createFireflies(color, properties);
+            case 'bird': return this.createBird(color);
+
+            // === DESERT DECORATIONS ===
+            case 'cactus': return this.createCactus(color);
+            case 'sand_dune': return this.createSandDune(color);
+            case 'skull': return this.createSkull(color);
+            case 'tumbleweed': return this.createTumbleweed(color);
+            case 'pottery': return this.createPottery(color);
+            case 'sun': return this.createSun(color, properties);
+
+            // === CYBERPUNK DECORATIONS ===
+            case 'neon_sign': return this.createNeonSign(color, properties);
+            case 'neon_tube': return this.createNeonTube(color);
+            case 'holographic_screen': return this.createHolographicScreen(color, properties);
+            case 'robot_parts': return this.createRobotParts(color);
+            case 'server_rack': return this.createServerRack(color, properties);
+            case 'drone': return this.createDrone(color, properties);
+
+            // === MEDIEVAL DECORATIONS ===
+            case 'torch': return this.createTorch(color, properties);
+            case 'armor_stand': return this.createArmorStand(color);
+            case 'barrel': return this.createBarrel(color);
+            case 'banner': return this.createBanner(color, properties);
+            case 'sword_display': return this.createSwordDisplay(color);
+            case 'chest': return this.createChest(color);
+
+            // === COMMON DECORATIONS ===
+            case 'potted_plant': return this.createPottedPlant(color);
+            case 'floor_lamp': return this.createFloorLamp(color);
+
+            default:
+                console.warn('Unknown decoration type:', type);
+                return null;
+        }
     }
 
     createBaseboard(halfSize, room) {
@@ -265,8 +375,12 @@ class Renderer {
     }
 
     createWall(direction, hasDoor, x, z, room) {
+        // Design'dan duvar rengini al
+        const design = room.design || {};
+        const wallColor = design.wall_color || '#5A6A75';
+
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x5A6A75, // Koyu gri-mavi duvar
+            color: wallColor,
             roughness: 0.9,
             metalness: 0.02
         });
@@ -866,6 +980,1173 @@ class Renderer {
     update() {
         this.updateCamera();
         this.render();
+    }
+
+    // === DECORATION CREATION METHODS ===
+
+    // === CHRISTMAS DECORATIONS ===
+    createChristmasTree(color, properties = {}) {
+        const group = new THREE.Group();
+        const treeColors = [color, '#008000', '#006400'];
+        for (let i = 0; i < 3; i++) {
+            const coneGeom = new THREE.ConeGeometry(0.8 - i * 0.2, 1.2 - i * 0.2, 8);
+            const coneMat = new THREE.MeshStandardMaterial({ color: treeColors[i % 3] });
+            const cone = new THREE.Mesh(coneGeom, coneMat);
+            cone.position.y = 0.8 + i * 0.7;
+            group.add(cone);
+        }
+        const trunkGeom = new THREE.CylinderGeometry(0.15, 0.2, 0.5, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: '#8B4513' });
+        const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+        trunk.position.y = 0.25;
+        group.add(trunk);
+        if (properties.star_color) {
+            const starGeom = new THREE.OctahedronGeometry(0.15, 0);
+            const starMat = new THREE.MeshStandardMaterial({ color: properties.star_color, emissive: properties.star_color, emissiveIntensity: 0.5 });
+            const star = new THREE.Mesh(starGeom, starMat);
+            star.position.y = 2.8;
+            group.add(star);
+        }
+        if (properties.lights) {
+            const ballColors = ['#FF0000', '#FFD700', '#0000FF', '#FF00FF'];
+            for (let i = 0; i < 12; i++) {
+                const ballGeom = new THREE.SphereGeometry(0.08, 8, 8);
+                const ballMat = new THREE.MeshStandardMaterial({ color: ballColors[i % 4], emissive: ballColors[i % 4], emissiveIntensity: 0.3 });
+                const ball = new THREE.Mesh(ballGeom, ballMat);
+                const angle = (i / 12) * Math.PI * 2;
+                const radius = 0.5 + (i % 3) * 0.15;
+                const height = 0.8 + (i % 3) * 0.7;
+                ball.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+                group.add(ball);
+            }
+        }
+        return group;
+    }
+
+    createGiftBox(color, properties = {}) {
+        const group = new THREE.Group();
+        const boxGeom = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        const boxMat = new THREE.MeshStandardMaterial({ color: color });
+        const box = new THREE.Mesh(boxGeom, boxMat);
+        box.position.y = 0.4;
+        group.add(box);
+        const ribbonColor = properties.ribbon_color || '#FFD700';
+        const ribbonMat = new THREE.MeshStandardMaterial({ color: ribbonColor });
+        const ribbonH = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.1, 0.15), ribbonMat);
+        ribbonH.position.y = 0.8;
+        group.add(ribbonH);
+        const ribbonV = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.85), ribbonMat);
+        ribbonV.position.y = 0.8;
+        group.add(ribbonV);
+        const bowGeom = new THREE.SphereGeometry(0.15, 8, 8);
+        const bow = new THREE.Mesh(bowGeom, ribbonMat);
+        bow.position.y = 0.95;
+        group.add(bow);
+        return group;
+    }
+
+    createSnowman(color) {
+        const group = new THREE.Group();
+        const snowMat = new THREE.MeshStandardMaterial({ color: color });
+        const sizes = [0.5, 0.35, 0.25];
+        let y = 0;
+        sizes.forEach((size) => {
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(size, 16, 16), snowMat);
+            y += size;
+            sphere.position.y = y;
+            y += size * 0.8;
+            group.add(sphere);
+        });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: '#000000' });
+        [-0.08, 0.08].forEach(x => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), eyeMat);
+            eye.position.set(x, 1.65, 0.2);
+            group.add(eye);
+        });
+        const noseGeom = new THREE.ConeGeometry(0.04, 0.2, 8);
+        const noseMat = new THREE.MeshStandardMaterial({ color: '#FF6600' });
+        const nose = new THREE.Mesh(noseGeom, noseMat);
+        nose.position.set(0, 1.55, 0.25);
+        nose.rotation.x = Math.PI / 2;
+        group.add(nose);
+        const hatMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.05, 16), hatMat);
+        brim.position.y = 1.85;
+        group.add(brim);
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3, 16), hatMat);
+        top.position.y = 2.05;
+        group.add(top);
+        return group;
+    }
+
+    createCandyCane(color) {
+        const group = new THREE.Group();
+        const straightGeom = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8);
+        const candyMat = new THREE.MeshStandardMaterial({ color: color });
+        const straight = new THREE.Mesh(straightGeom, candyMat);
+        straight.position.y = 0.75;
+        group.add(straight);
+        const curveGeom = new THREE.TorusGeometry(0.2, 0.1, 8, 16, Math.PI);
+        const curve = new THREE.Mesh(curveGeom, candyMat);
+        curve.position.set(0.2, 1.5, 0);
+        curve.rotation.z = Math.PI / 2;
+        group.add(curve);
+        return group;
+    }
+
+    createStringLights(properties = {}) {
+        const group = new THREE.Group();
+        const colors = properties.colors || ['#FF0000', '#00FF00', '#0000FF', '#FFD700'];
+        const radius = 4.5;
+        const numLights = 24;
+        for (let i = 0; i < numLights; i++) {
+            const angle = (i / numLights) * Math.PI * 2;
+            const bulbGeom = new THREE.SphereGeometry(0.08, 8, 8);
+            const bulbMat = new THREE.MeshStandardMaterial({ color: colors[i % colors.length], emissive: colors[i % colors.length], emissiveIntensity: 0.5 });
+            const bulb = new THREE.Mesh(bulbGeom, bulbMat);
+            bulb.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            group.add(bulb);
+        }
+        return group;
+    }
+
+    // === HALLOWEEN DECORATIONS ===
+    createPumpkin(color, properties = {}) {
+        const group = new THREE.Group();
+        const pumpkinGeom = new THREE.SphereGeometry(0.5, 16, 16);
+        const pumpkinMat = new THREE.MeshStandardMaterial({ color: color, emissive: properties.glowing ? '#FF6600' : '#000000', emissiveIntensity: properties.glowing ? 0.3 : 0 });
+        const pumpkin = new THREE.Mesh(pumpkinGeom, pumpkinMat);
+        pumpkin.scale.set(1, 0.8, 1);
+        pumpkin.position.y = 0.4;
+        group.add(pumpkin);
+        const stemGeom = new THREE.CylinderGeometry(0.05, 0.08, 0.2, 8);
+        const stemMat = new THREE.MeshStandardMaterial({ color: '#228B22' });
+        const stem = new THREE.Mesh(stemGeom, stemMat);
+        stem.position.y = 0.85;
+        group.add(stem);
+        if (properties.glowing) {
+            const eyeMat = new THREE.MeshStandardMaterial({ color: '#FFD700', emissive: '#FFD700', emissiveIntensity: 0.8 });
+            [-0.15, 0.15].forEach(x => {
+                const eyeGeom = new THREE.ConeGeometry(0.08, 0.1, 3);
+                const eye = new THREE.Mesh(eyeGeom, eyeMat);
+                eye.position.set(x, 0.5, 0.45);
+                eye.rotation.x = Math.PI;
+                group.add(eye);
+            });
+            const mouthGeom = new THREE.BoxGeometry(0.25, 0.08, 0.1);
+            const mouth = new THREE.Mesh(mouthGeom, eyeMat);
+            mouth.position.set(0, 0.3, 0.45);
+            group.add(mouth);
+        }
+        return group;
+    }
+
+    createBat(color) {
+        const group = new THREE.Group();
+        const bodyGeom = new THREE.SphereGeometry(0.15, 8, 8);
+        const batMat = new THREE.MeshStandardMaterial({ color: color });
+        const body = new THREE.Mesh(bodyGeom, batMat);
+        body.scale.set(1, 0.8, 0.6);
+        group.add(body);
+        const wingGeom = new THREE.PlaneGeometry(0.4, 0.3);
+        const wingMat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide });
+        [-0.25, 0.25].forEach((x, i) => {
+            const wing = new THREE.Mesh(wingGeom, wingMat);
+            wing.position.set(x, 0, 0);
+            wing.rotation.y = i === 0 ? -0.3 : 0.3;
+            group.add(wing);
+        });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: '#FF0000', emissive: '#FF0000', emissiveIntensity: 0.3 });
+        [-0.05, 0.05].forEach(x => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), eyeMat);
+            eye.position.set(x, 0.05, 0.12);
+            group.add(eye);
+        });
+        return group;
+    }
+
+    createSpiderWeb(color) {
+        const group = new THREE.Group();
+        const webMat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0)];
+            const lineGeom = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(lineGeom, webMat);
+            group.add(line);
+        }
+        for (let ring = 0.2; ring <= 1; ring += 0.2) {
+            const points = [];
+            for (let i = 0; i <= 32; i++) {
+                const angle = (i / 32) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(angle) * ring, Math.sin(angle) * ring, 0));
+            }
+            const ringGeom = new THREE.BufferGeometry().setFromPoints(points);
+            const ringLine = new THREE.Line(ringGeom, webMat);
+            group.add(ringLine);
+        }
+        return group;
+    }
+
+    createCauldron(color, properties = {}) {
+        const group = new THREE.Group();
+        const cauldronGeom = new THREE.SphereGeometry(0.5, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const cauldronMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.5 });
+        const cauldron = new THREE.Mesh(cauldronGeom, cauldronMat);
+        cauldron.rotation.x = Math.PI;
+        cauldron.position.y = 0.5;
+        group.add(cauldron);
+        const rimGeom = new THREE.TorusGeometry(0.5, 0.05, 8, 32);
+        const rim = new THREE.Mesh(rimGeom, cauldronMat);
+        rim.position.y = 0.5;
+        rim.rotation.x = Math.PI / 2;
+        group.add(rim);
+        if (properties.bubbling) {
+            const liquidGeom = new THREE.CircleGeometry(0.45, 16);
+            const liquidMat = new THREE.MeshStandardMaterial({ color: properties.smoke_color || '#00FF00', emissive: properties.smoke_color || '#00FF00', emissiveIntensity: 0.5 });
+            const liquid = new THREE.Mesh(liquidGeom, liquidMat);
+            liquid.rotation.x = -Math.PI / 2;
+            liquid.position.y = 0.45;
+            group.add(liquid);
+        }
+        return group;
+    }
+
+    // === OFFICE DECORATIONS ===
+    createDesk(color) {
+        const group = new THREE.Group();
+        const deskMat = new THREE.MeshStandardMaterial({ color: color });
+        const topGeom = new THREE.BoxGeometry(2, 0.1, 1);
+        const top = new THREE.Mesh(topGeom, deskMat);
+        top.position.y = 0.75;
+        group.add(top);
+        const legGeom = new THREE.BoxGeometry(0.1, 0.75, 0.1);
+        [[-0.9, -0.4], [-0.9, 0.4], [0.9, -0.4], [0.9, 0.4]].forEach(([x, z]) => {
+            const leg = new THREE.Mesh(legGeom, deskMat);
+            leg.position.set(x, 0.375, z);
+            group.add(leg);
+        });
+        return group;
+    }
+
+    createOfficeChair(color) {
+        const group = new THREE.Group();
+        const chairMat = new THREE.MeshStandardMaterial({ color: color });
+        const seatGeom = new THREE.BoxGeometry(0.5, 0.1, 0.5);
+        const seat = new THREE.Mesh(seatGeom, chairMat);
+        seat.position.y = 0.5;
+        group.add(seat);
+        const backGeom = new THREE.BoxGeometry(0.5, 0.6, 0.1);
+        const back = new THREE.Mesh(backGeom, chairMat);
+        back.position.set(0, 0.85, -0.2);
+        group.add(back);
+        const baseGeom = new THREE.CylinderGeometry(0.05, 0.05, 0.5, 8);
+        const baseMat = new THREE.MeshStandardMaterial({ color: '#C0C0C0' });
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        base.position.y = 0.25;
+        group.add(base);
+        return group;
+    }
+
+    createDeskLamp(color) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.7 });
+        const baseGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16);
+        const base = new THREE.Mesh(baseGeom, metalMat);
+        base.position.y = 0.025;
+        group.add(base);
+        const armGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
+        const arm = new THREE.Mesh(armGeom, metalMat);
+        arm.position.set(0, 0.3, 0);
+        arm.rotation.z = 0.3;
+        group.add(arm);
+        const headGeom = new THREE.ConeGeometry(0.15, 0.2, 16);
+        const head = new THREE.Mesh(headGeom, metalMat);
+        head.position.set(0.15, 0.55, 0);
+        head.rotation.z = -Math.PI / 2;
+        group.add(head);
+        const light = new THREE.PointLight(0xFFFFAA, 0.5, 2);
+        light.position.set(0.25, 0.5, 0);
+        group.add(light);
+        return group;
+    }
+
+    createWaterCooler(color) {
+        const group = new THREE.Group();
+        const bodyGeom = new THREE.BoxGeometry(0.4, 1.2, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF' });
+        const body = new THREE.Mesh(bodyGeom, bodyMat);
+        body.position.y = 0.6;
+        group.add(body);
+        const bottleGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16);
+        const bottleMat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.6 });
+        const bottle = new THREE.Mesh(bottleGeom, bottleMat);
+        bottle.position.y = 1.45;
+        group.add(bottle);
+        return group;
+    }
+
+    createClock(color) {
+        const group = new THREE.Group();
+        const faceGeom = new THREE.CircleGeometry(0.4, 32);
+        const faceMat = new THREE.MeshStandardMaterial({ color: color });
+        const face = new THREE.Mesh(faceGeom, faceMat);
+        group.add(face);
+        const frameGeom = new THREE.RingGeometry(0.38, 0.42, 32);
+        const frameMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const frame = new THREE.Mesh(frameGeom, frameMat);
+        frame.position.z = 0.01;
+        group.add(frame);
+        const handMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.2, 0.02), handMat);
+        hourHand.position.set(0, 0.1, 0.02);
+        group.add(hourHand);
+        const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.3, 0.015), handMat);
+        minuteHand.position.set(0, 0.15, 0.02);
+        minuteHand.rotation.z = Math.PI / 3;
+        group.add(minuteHand);
+        return group;
+    }
+
+    // === OLD SALON DECORATIONS ===
+    createFireplace(color, properties = {}) {
+        const group = new THREE.Group();
+        const brickMat = new THREE.MeshStandardMaterial({ color: color });
+        const frameGeom = new THREE.BoxGeometry(2, 1.5, 0.3);
+        const frame = new THREE.Mesh(frameGeom, brickMat);
+        frame.position.y = 0.75;
+        group.add(frame);
+        const openingGeom = new THREE.BoxGeometry(1.2, 1, 0.35);
+        const openingMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const opening = new THREE.Mesh(openingGeom, openingMat);
+        opening.position.set(0, 0.5, 0.05);
+        group.add(opening);
+        const mantleGeom = new THREE.BoxGeometry(2.2, 0.1, 0.4);
+        const mantle = new THREE.Mesh(mantleGeom, brickMat);
+        mantle.position.y = 1.55;
+        group.add(mantle);
+        if (properties.fire) {
+            const fireLight = new THREE.PointLight(0xFF6600, 0.8, 3);
+            fireLight.position.set(0, 0.5, 0.3);
+            group.add(fireLight);
+            const fireGeom = new THREE.ConeGeometry(0.3, 0.6, 8);
+            const fireMat = new THREE.MeshStandardMaterial({ color: '#FF4500', emissive: '#FF4500', emissiveIntensity: 0.8 });
+            const fire = new THREE.Mesh(fireGeom, fireMat);
+            fire.position.set(0, 0.3, 0.2);
+            group.add(fire);
+        }
+        return group;
+    }
+
+    createChandelier(color, properties = {}) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const centralGeom = new THREE.CylinderGeometry(0.1, 0.15, 0.3, 8);
+        const central = new THREE.Mesh(centralGeom, metalMat);
+        group.add(central);
+        const numCandles = properties.candles || 6;
+        for (let i = 0; i < numCandles; i++) {
+            const angle = (i / numCandles) * Math.PI * 2;
+            const radius = 0.4;
+            const armGeom = new THREE.CylinderGeometry(0.02, 0.02, radius * 2, 8);
+            const arm = new THREE.Mesh(armGeom, metalMat);
+            arm.position.set(Math.cos(angle) * radius / 2, -0.1, Math.sin(angle) * radius / 2);
+            arm.rotation.z = Math.PI / 2;
+            arm.rotation.y = angle;
+            group.add(arm);
+            const holderGeom = new THREE.CylinderGeometry(0.04, 0.05, 0.1, 8);
+            const holder = new THREE.Mesh(holderGeom, metalMat);
+            holder.position.set(Math.cos(angle) * radius, -0.2, Math.sin(angle) * radius);
+            group.add(holder);
+            const flameGeom = new THREE.SphereGeometry(0.04, 8, 8);
+            const flameMat = new THREE.MeshStandardMaterial({ color: '#FFD700', emissive: '#FFD700', emissiveIntensity: 0.8 });
+            const flame = new THREE.Mesh(flameGeom, flameMat);
+            flame.position.set(Math.cos(angle) * radius, -0.1, Math.sin(angle) * radius);
+            group.add(flame);
+        }
+        const light = new THREE.PointLight(0xFFD700, 0.6, 5);
+        light.position.y = -0.2;
+        group.add(light);
+        return group;
+    }
+
+    createGrandfatherClock(color) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const bodyGeom = new THREE.BoxGeometry(0.6, 2.2, 0.4);
+        const body = new THREE.Mesh(bodyGeom, woodMat);
+        body.position.y = 1.1;
+        group.add(body);
+        const crownGeom = new THREE.BoxGeometry(0.7, 0.2, 0.45);
+        const crown = new THREE.Mesh(crownGeom, woodMat);
+        crown.position.y = 2.3;
+        group.add(crown);
+        const faceGeom = new THREE.CircleGeometry(0.2, 32);
+        const faceMat = new THREE.MeshStandardMaterial({ color: '#FFFFF0' });
+        const face = new THREE.Mesh(faceGeom, faceMat);
+        face.position.set(0, 1.8, 0.21);
+        group.add(face);
+        return group;
+    }
+
+    createArmchair(color, properties = {}) {
+        const group = new THREE.Group();
+        const fabricMat = new THREE.MeshStandardMaterial({ color: color });
+        const seatGeom = new THREE.BoxGeometry(0.8, 0.2, 0.8);
+        const seat = new THREE.Mesh(seatGeom, fabricMat);
+        seat.position.y = 0.4;
+        group.add(seat);
+        const backGeom = new THREE.BoxGeometry(0.8, 0.8, 0.15);
+        const back = new THREE.Mesh(backGeom, fabricMat);
+        back.position.set(0, 0.9, -0.35);
+        group.add(back);
+        [0.45, -0.45].forEach(x => {
+            const armGeom = new THREE.BoxGeometry(0.15, 0.3, 0.8);
+            const arm = new THREE.Mesh(armGeom, fabricMat);
+            arm.position.set(x, 0.65, 0);
+            group.add(arm);
+        });
+        if (properties.rotation_y) group.rotation.y = properties.rotation_y;
+        return group;
+    }
+
+    createCandelabra(color, properties = {}) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const baseGeom = new THREE.CylinderGeometry(0.1, 0.15, 0.05, 16);
+        const base = new THREE.Mesh(baseGeom, metalMat);
+        group.add(base);
+        const stemGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8);
+        const stem = new THREE.Mesh(stemGeom, metalMat);
+        stem.position.y = 0.22;
+        group.add(stem);
+        const positions = [[0, 0], [-0.1, 0], [0.1, 0]];
+        positions.forEach(([x, z], i) => {
+            const holderGeom = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 8);
+            const holder = new THREE.Mesh(holderGeom, metalMat);
+            holder.position.set(x, 0.45 + i * 0.05, z);
+            group.add(holder);
+            if (properties.lit) {
+                const flameGeom = new THREE.ConeGeometry(0.02, 0.06, 8);
+                const flameMat = new THREE.MeshStandardMaterial({ color: '#FF6600', emissive: '#FF6600', emissiveIntensity: 0.8 });
+                const flame = new THREE.Mesh(flameGeom, flameMat);
+                flame.position.set(x, 0.52 + i * 0.05, z);
+                group.add(flame);
+            }
+        });
+        return group;
+    }
+
+    // === SPACESHIP DECORATIONS ===
+    createControlPanel(color, properties = {}) {
+        const group = new THREE.Group();
+        const panelMat = new THREE.MeshStandardMaterial({ color: color });
+        const baseGeom = new THREE.BoxGeometry(3, 1.2, 0.3);
+        const base = new THREE.Mesh(baseGeom, panelMat);
+        base.position.y = 0.6;
+        group.add(base);
+        const screenMat = new THREE.MeshStandardMaterial({ color: properties.screen_color || '#00FFFF', emissive: properties.screen_color || '#00FFFF', emissiveIntensity: 0.5 });
+        for (let i = -1; i <= 1; i++) {
+            const screenGeom = new THREE.PlaneGeometry(0.8, 0.6);
+            const screen = new THREE.Mesh(screenGeom, screenMat);
+            screen.position.set(i * 0.9, 0.8, 0.16);
+            group.add(screen);
+        }
+        const buttonMat = new THREE.MeshStandardMaterial({ color: '#FF0000', emissive: '#FF0000', emissiveIntensity: properties.blinking ? 0.5 : 0.2 });
+        for (let i = 0; i < 6; i++) {
+            const buttonGeom = new THREE.CylinderGeometry(0.03, 0.03, 0.02, 8);
+            const button = new THREE.Mesh(buttonGeom, buttonMat);
+            button.position.set(-1 + i * 0.4, 0.3, 0.16);
+            button.rotation.x = Math.PI / 2;
+            group.add(button);
+        }
+        return group;
+    }
+
+    createHologram(color, properties = {}) {
+        const group = new THREE.Group();
+        const holoMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.5, transparent: true, opacity: 0.6 });
+        const projGeom = new THREE.CylinderGeometry(0.3, 0.4, 0.1, 16);
+        const projMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A', metalness: 0.8 });
+        const proj = new THREE.Mesh(projGeom, projMat);
+        group.add(proj);
+        let holoGeom = properties.shape === 'globe' ? new THREE.SphereGeometry(0.4, 16, 16) : new THREE.IcosahedronGeometry(0.4, 0);
+        const holo = new THREE.Mesh(holoGeom, holoMat);
+        holo.position.y = 0.6;
+        group.add(holo);
+        const beamGeom = new THREE.ConeGeometry(0.1, 0.5, 16);
+        const beamMat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.3 });
+        const beam = new THREE.Mesh(beamGeom, beamMat);
+        beam.position.y = 0.25;
+        group.add(beam);
+        return group;
+    }
+
+    createLightTube(color) {
+        const group = new THREE.Group();
+        const tubeGeom = new THREE.CylinderGeometry(0.05, 0.05, 3, 8);
+        const tubeMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.8 });
+        const tube = new THREE.Mesh(tubeGeom, tubeMat);
+        group.add(tube);
+        const light = new THREE.PointLight(new THREE.Color(color).getHex(), 0.5, 3);
+        group.add(light);
+        return group;
+    }
+
+    createCryopod(color, properties = {}) {
+        const group = new THREE.Group();
+        const podGeom = new THREE.CapsuleGeometry(0.4, 1.2, 8, 16);
+        const podMat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.6, metalness: 0.5 });
+        const pod = new THREE.Mesh(podGeom, podMat);
+        pod.position.y = 1;
+        group.add(pod);
+        const baseGeom = new THREE.CylinderGeometry(0.5, 0.6, 0.2, 16);
+        const baseMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A', metalness: 0.8 });
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        base.position.y = 0.1;
+        group.add(base);
+        if (properties.frost) {
+            const frostLight = new THREE.PointLight(0x87CEEB, 0.3, 2);
+            frostLight.position.y = 1;
+            group.add(frostLight);
+        }
+        return group;
+    }
+
+    createRobot(color) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const headGeom = new THREE.BoxGeometry(0.4, 0.3, 0.3);
+        const head = new THREE.Mesh(headGeom, metalMat);
+        head.position.y = 1.4;
+        group.add(head);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: '#00FF00', emissive: '#00FF00', emissiveIntensity: 0.5 });
+        [-0.1, 0.1].forEach(x => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
+            eye.position.set(x, 1.45, 0.16);
+            group.add(eye);
+        });
+        const bodyGeom = new THREE.BoxGeometry(0.5, 0.6, 0.35);
+        const body = new THREE.Mesh(bodyGeom, metalMat);
+        body.position.y = 1;
+        group.add(body);
+        [-0.15, 0.15].forEach(x => {
+            const legGeom = new THREE.BoxGeometry(0.15, 0.7, 0.15);
+            const leg = new THREE.Mesh(legGeom, metalMat);
+            leg.position.set(x, 0.35, 0);
+            group.add(leg);
+        });
+        [-0.35, 0.35].forEach(x => {
+            const armGeom = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+            const arm = new THREE.Mesh(armGeom, metalMat);
+            arm.position.set(x, 1, 0);
+            group.add(arm);
+        });
+        return group;
+    }
+
+    // === UNDERWATER DECORATIONS ===
+    createCoral(color) {
+        const group = new THREE.Group();
+        const coralMat = new THREE.MeshStandardMaterial({ color: color });
+        for (let i = 0; i < 5; i++) {
+            const branchGeom = new THREE.CylinderGeometry(0.02, 0.08, 0.5 + Math.random() * 0.5, 8);
+            const branch = new THREE.Mesh(branchGeom, coralMat);
+            branch.position.set((Math.random() - 0.5) * 0.4, (0.25 + Math.random() * 0.25), (Math.random() - 0.5) * 0.4);
+            branch.rotation.x = (Math.random() - 0.5) * 0.5;
+            branch.rotation.z = (Math.random() - 0.5) * 0.5;
+            group.add(branch);
+        }
+        return group;
+    }
+
+    createSeashell(color) {
+        const group = new THREE.Group();
+        const shellGeom = new THREE.SphereGeometry(0.3, 16, 8, 0, Math.PI);
+        const shellMat = new THREE.MeshStandardMaterial({ color: color });
+        const shell = new THREE.Mesh(shellGeom, shellMat);
+        shell.rotation.x = -Math.PI / 2;
+        shell.scale.y = 0.5;
+        group.add(shell);
+        return group;
+    }
+
+    createStarfish(color) {
+        const group = new THREE.Group();
+        const starMat = new THREE.MeshStandardMaterial({ color: color });
+        const centerGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16);
+        const center = new THREE.Mesh(centerGeom, starMat);
+        center.rotation.x = Math.PI / 2;
+        group.add(center);
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const armGeom = new THREE.ConeGeometry(0.08, 0.4, 8);
+            const arm = new THREE.Mesh(armGeom, starMat);
+            arm.position.set(Math.cos(angle) * 0.25, 0, Math.sin(angle) * 0.25);
+            arm.rotation.z = Math.PI / 2;
+            arm.rotation.y = -angle;
+            group.add(arm);
+        }
+        return group;
+    }
+
+    createBubbles(color, properties = {}) {
+        const group = new THREE.Group();
+        const bubbleMat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.4 });
+        for (let i = 0; i < 15; i++) {
+            const size = 0.05 + Math.random() * 0.1;
+            const bubbleGeom = new THREE.SphereGeometry(size, 8, 8);
+            const bubble = new THREE.Mesh(bubbleGeom, bubbleMat);
+            bubble.position.set((Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 4);
+            group.add(bubble);
+        }
+        return group;
+    }
+
+    createFish(color, properties = {}) {
+        const group = new THREE.Group();
+        const fishMat = new THREE.MeshStandardMaterial({ color: color });
+        const bodyGeom = new THREE.SphereGeometry(0.2, 16, 16);
+        const body = new THREE.Mesh(bodyGeom, fishMat);
+        body.scale.set(1.5, 0.8, 0.5);
+        group.add(body);
+        const tailGeom = new THREE.ConeGeometry(0.15, 0.3, 8);
+        const tail = new THREE.Mesh(tailGeom, fishMat);
+        tail.position.x = -0.35;
+        tail.rotation.z = Math.PI / 2;
+        group.add(tail);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF' });
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
+        eye.position.set(0.2, 0.05, 0.08);
+        group.add(eye);
+        return group;
+    }
+
+    createTreasureChest(color, properties = {}) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const baseGeom = new THREE.BoxGeometry(0.8, 0.4, 0.5);
+        const base = new THREE.Mesh(baseGeom, woodMat);
+        base.position.y = 0.2;
+        group.add(base);
+        const lidGeom = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16, 1, false, 0, Math.PI);
+        const lid = new THREE.Mesh(lidGeom, woodMat);
+        lid.rotation.z = Math.PI / 2;
+        lid.position.y = 0.4;
+        if (properties.open) { lid.rotation.x = -0.5; lid.position.z = -0.15; }
+        group.add(lid);
+        if (properties.gold && properties.open) {
+            const goldMat = new THREE.MeshStandardMaterial({ color: '#FFD700', emissive: '#FFD700', emissiveIntensity: 0.3, metalness: 0.8 });
+            for (let i = 0; i < 8; i++) {
+                const coinGeom = new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8);
+                const coin = new THREE.Mesh(coinGeom, goldMat);
+                coin.position.set((Math.random() - 0.5) * 0.4, 0.35 + Math.random() * 0.1, (Math.random() - 0.5) * 0.2);
+                coin.rotation.x = Math.random() * Math.PI;
+                group.add(coin);
+            }
+        }
+        return group;
+    }
+
+    // === FOREST DECORATIONS ===
+    createTreeStump(color) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const stumpGeom = new THREE.CylinderGeometry(0.4, 0.5, 0.6, 12);
+        const stump = new THREE.Mesh(stumpGeom, woodMat);
+        stump.position.y = 0.3;
+        group.add(stump);
+        const topGeom = new THREE.CircleGeometry(0.4, 12);
+        const topMat = new THREE.MeshStandardMaterial({ color: '#DEB887' });
+        const top = new THREE.Mesh(topGeom, topMat);
+        top.rotation.x = -Math.PI / 2;
+        top.position.y = 0.61;
+        group.add(top);
+        return group;
+    }
+
+    createMushroom(color, properties = {}) {
+        const group = new THREE.Group();
+        const stemGeom = new THREE.CylinderGeometry(0.08, 0.1, 0.3, 8);
+        const stemMat = new THREE.MeshStandardMaterial({ color: '#FFFFF0' });
+        const stem = new THREE.Mesh(stemGeom, stemMat);
+        stem.position.y = 0.15;
+        group.add(stem);
+        const capGeom = new THREE.SphereGeometry(0.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+        const capMat = new THREE.MeshStandardMaterial({ color: color });
+        const cap = new THREE.Mesh(capGeom, capMat);
+        cap.position.y = 0.3;
+        group.add(cap);
+        if (properties.spots) {
+            const spotMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF' });
+            for (let i = 0; i < 5; i++) {
+                const spotGeom = new THREE.CircleGeometry(0.03, 8);
+                const spot = new THREE.Mesh(spotGeom, spotMat);
+                const angle = (i / 5) * Math.PI * 2;
+                spot.position.set(Math.cos(angle) * 0.12, 0.35 + Math.sin(angle * 2) * 0.03, Math.sin(angle) * 0.12);
+                spot.lookAt(spot.position.clone().multiplyScalar(2));
+                group.add(spot);
+            }
+        }
+        return group;
+    }
+
+    createFern(color) {
+        const group = new THREE.Group();
+        const fernMat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide });
+        for (let i = 0; i < 8; i++) {
+            const frondGeom = new THREE.PlaneGeometry(0.1, 0.8);
+            const frond = new THREE.Mesh(frondGeom, fernMat);
+            const angle = (i / 8) * Math.PI * 2;
+            frond.position.set(Math.cos(angle) * 0.1, 0.4, Math.sin(angle) * 0.1);
+            frond.rotation.y = angle;
+            frond.rotation.x = -0.5;
+            group.add(frond);
+        }
+        return group;
+    }
+
+    createRock(color) {
+        const group = new THREE.Group();
+        const rockMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.9 });
+        const rockGeom = new THREE.DodecahedronGeometry(0.4, 1);
+        const rock = new THREE.Mesh(rockGeom, rockMat);
+        rock.scale.set(1, 0.6, 1);
+        rock.position.y = 0.2;
+        group.add(rock);
+        return group;
+    }
+
+    createFireflies(color, properties = {}) {
+        const group = new THREE.Group();
+        const count = properties.count || 20;
+        const fireflyMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.8 });
+        for (let i = 0; i < count; i++) {
+            const fireflyGeom = new THREE.SphereGeometry(0.03, 8, 8);
+            const firefly = new THREE.Mesh(fireflyGeom, fireflyMat);
+            firefly.position.set((Math.random() - 0.5) * 4, 0.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4);
+            group.add(firefly);
+        }
+        return group;
+    }
+
+    createBird(color) {
+        const group = new THREE.Group();
+        const birdMat = new THREE.MeshStandardMaterial({ color: color });
+        const bodyGeom = new THREE.SphereGeometry(0.15, 8, 8);
+        const body = new THREE.Mesh(bodyGeom, birdMat);
+        body.scale.set(1.2, 0.8, 0.8);
+        group.add(body);
+        const headGeom = new THREE.SphereGeometry(0.1, 8, 8);
+        const head = new THREE.Mesh(headGeom, birdMat);
+        head.position.set(0.15, 0.08, 0);
+        group.add(head);
+        const beakGeom = new THREE.ConeGeometry(0.03, 0.1, 8);
+        const beakMat = new THREE.MeshStandardMaterial({ color: '#FFD700' });
+        const beak = new THREE.Mesh(beakGeom, beakMat);
+        beak.position.set(0.28, 0.08, 0);
+        beak.rotation.z = -Math.PI / 2;
+        group.add(beak);
+        const wingGeom = new THREE.PlaneGeometry(0.2, 0.1);
+        [0.08, -0.08].forEach(z => {
+            const wing = new THREE.Mesh(wingGeom, birdMat);
+            wing.position.set(0, 0.05, z);
+            wing.rotation.x = z > 0 ? 0.3 : -0.3;
+            group.add(wing);
+        });
+        return group;
+    }
+
+    // === DESERT DECORATIONS ===
+    createCactus(color) {
+        const group = new THREE.Group();
+        const cactusMat = new THREE.MeshStandardMaterial({ color: color });
+        const bodyGeom = new THREE.CylinderGeometry(0.2, 0.25, 1.5, 8);
+        const body = new THREE.Mesh(bodyGeom, cactusMat);
+        body.position.y = 0.75;
+        group.add(body);
+        const armGeom = new THREE.CylinderGeometry(0.1, 0.12, 0.5, 8);
+        const leftArm = new THREE.Mesh(armGeom, cactusMat);
+        leftArm.position.set(-0.3, 0.8, 0);
+        leftArm.rotation.z = Math.PI / 4;
+        group.add(leftArm);
+        const rightArm = new THREE.Mesh(armGeom, cactusMat);
+        rightArm.position.set(0.3, 1, 0);
+        rightArm.rotation.z = -Math.PI / 4;
+        group.add(rightArm);
+        return group;
+    }
+
+    createSandDune(color) {
+        const group = new THREE.Group();
+        const sandMat = new THREE.MeshStandardMaterial({ color: color });
+        const duneGeom = new THREE.SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+        const dune = new THREE.Mesh(duneGeom, sandMat);
+        dune.scale.set(1, 0.3, 1);
+        group.add(dune);
+        return group;
+    }
+
+    createSkull(color) {
+        const group = new THREE.Group();
+        const boneMat = new THREE.MeshStandardMaterial({ color: color });
+        const craniumGeom = new THREE.SphereGeometry(0.2, 16, 16);
+        const cranium = new THREE.Mesh(craniumGeom, boneMat);
+        cranium.scale.set(0.8, 1, 0.9);
+        cranium.position.y = 0.15;
+        group.add(cranium);
+        const jawGeom = new THREE.BoxGeometry(0.15, 0.08, 0.12);
+        const jaw = new THREE.Mesh(jawGeom, boneMat);
+        jaw.position.set(0, 0.02, 0.08);
+        group.add(jaw);
+        const socketMat = new THREE.MeshStandardMaterial({ color: '#000000' });
+        [-0.06, 0.06].forEach(x => {
+            const socket = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), socketMat);
+            socket.position.set(x, 0.18, 0.15);
+            group.add(socket);
+        });
+        return group;
+    }
+
+    createTumbleweed(color) {
+        const group = new THREE.Group();
+        const twMat = new THREE.MeshStandardMaterial({ color: color, wireframe: true });
+        const twGeom = new THREE.IcosahedronGeometry(0.3, 1);
+        const tw = new THREE.Mesh(twGeom, twMat);
+        group.add(tw);
+        return group;
+    }
+
+    createPottery(color) {
+        const group = new THREE.Group();
+        const clayMat = new THREE.MeshStandardMaterial({ color: color });
+        const points = [];
+        for (let i = 0; i < 10; i++) {
+            const t = i / 9;
+            const r = 0.15 + Math.sin(t * Math.PI) * 0.15;
+            points.push(new THREE.Vector2(r, t * 0.8));
+        }
+        const vaseGeom = new THREE.LatheGeometry(points, 16);
+        const vase = new THREE.Mesh(vaseGeom, clayMat);
+        group.add(vase);
+        return group;
+    }
+
+    createSun(color, properties = {}) {
+        const group = new THREE.Group();
+        const sunMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: properties.glowing ? 0.8 : 0.3 });
+        const sunGeom = new THREE.CircleGeometry(0.5, 32);
+        const sun = new THREE.Mesh(sunGeom, sunMat);
+        group.add(sun);
+        for (let i = 0; i < 8; i++) {
+            const rayGeom = new THREE.PlaneGeometry(0.1, 0.3);
+            const ray = new THREE.Mesh(rayGeom, sunMat);
+            const angle = (i / 8) * Math.PI * 2;
+            ray.position.set(Math.cos(angle) * 0.7, Math.sin(angle) * 0.7, 0);
+            ray.rotation.z = angle + Math.PI / 2;
+            group.add(ray);
+        }
+        if (properties.glowing) {
+            const light = new THREE.PointLight(0xFFD700, 0.5, 5);
+            group.add(light);
+        }
+        return group;
+    }
+
+    // === CYBERPUNK DECORATIONS ===
+    createNeonSign(color, properties = {}) {
+        const group = new THREE.Group();
+        const neonMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: properties.flicker ? 0.8 : 0.6 });
+        const backGeom = new THREE.BoxGeometry(2.5, 0.8, 0.1);
+        const backMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const back = new THREE.Mesh(backGeom, backMat);
+        group.add(back);
+        const textGeom = new THREE.BoxGeometry(2, 0.5, 0.05);
+        const text = new THREE.Mesh(textGeom, neonMat);
+        text.position.z = 0.08;
+        group.add(text);
+        const light = new THREE.PointLight(new THREE.Color(color).getHex(), 0.5, 3);
+        light.position.z = 0.5;
+        group.add(light);
+        return group;
+    }
+
+    createNeonTube(color) {
+        const group = new THREE.Group();
+        const neonMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.8 });
+        const tubeGeom = new THREE.CylinderGeometry(0.02, 0.02, 3, 8);
+        const tube = new THREE.Mesh(tubeGeom, neonMat);
+        group.add(tube);
+        const light = new THREE.PointLight(new THREE.Color(color).getHex(), 0.3, 2);
+        group.add(light);
+        return group;
+    }
+
+    createHolographicScreen(color, properties = {}) {
+        const group = new THREE.Group();
+        const screenMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.5, transparent: true, opacity: 0.7 });
+        const screenGeom = new THREE.PlaneGeometry(1.5, 1);
+        const screen = new THREE.Mesh(screenGeom, screenMat);
+        group.add(screen);
+        const frameMat = new THREE.MeshStandardMaterial({ color: '#333333', metalness: 0.8 });
+        const frameGeom = new THREE.BoxGeometry(1.6, 1.1, 0.05);
+        const frame = new THREE.Mesh(frameGeom, frameMat);
+        frame.position.z = -0.03;
+        group.add(frame);
+        return group;
+    }
+
+    createRobotParts(color) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const parts = [
+            { geom: new THREE.BoxGeometry(0.3, 0.2, 0.2), pos: [0, 0.1, 0] },
+            { geom: new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8), pos: [0.3, 0.1, 0.2] },
+            { geom: new THREE.SphereGeometry(0.15, 8, 8), pos: [-0.2, 0.15, 0.3] },
+            { geom: new THREE.BoxGeometry(0.4, 0.1, 0.1), pos: [0.1, 0.05, -0.2] }
+        ];
+        parts.forEach(part => {
+            const mesh = new THREE.Mesh(part.geom, metalMat);
+            mesh.position.set(...part.pos);
+            mesh.rotation.set(Math.random(), Math.random(), Math.random());
+            group.add(mesh);
+        });
+        return group;
+    }
+
+    createServerRack(color, properties = {}) {
+        const group = new THREE.Group();
+        const rackMat = new THREE.MeshStandardMaterial({ color: color });
+        const rackGeom = new THREE.BoxGeometry(0.8, 2, 0.5);
+        const rack = new THREE.Mesh(rackGeom, rackMat);
+        rack.position.y = 1;
+        group.add(rack);
+        const serverMat = new THREE.MeshStandardMaterial({ color: '#2A2A2A' });
+        for (let i = 0; i < 5; i++) {
+            const serverGeom = new THREE.BoxGeometry(0.75, 0.3, 0.45);
+            const server = new THREE.Mesh(serverGeom, serverMat);
+            server.position.set(0, 0.3 + i * 0.35, 0.03);
+            group.add(server);
+            if (properties.lights) {
+                const lightMat = new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? '#00FF00' : '#FF0000', emissive: i % 2 === 0 ? '#00FF00' : '#FF0000', emissiveIntensity: 0.5 });
+                const lightGeom = new THREE.CircleGeometry(0.02, 8);
+                const light = new THREE.Mesh(lightGeom, lightMat);
+                light.position.set(0.3, 0.3 + i * 0.35, 0.26);
+                group.add(light);
+            }
+        }
+        return group;
+    }
+
+    createDrone(color, properties = {}) {
+        const group = new THREE.Group();
+        const droneMat = new THREE.MeshStandardMaterial({ color: color });
+        const bodyGeom = new THREE.BoxGeometry(0.3, 0.1, 0.3);
+        const body = new THREE.Mesh(bodyGeom, droneMat);
+        group.add(body);
+        const armMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        [[0.2, 0.2], [0.2, -0.2], [-0.2, 0.2], [-0.2, -0.2]].forEach(([x, z]) => {
+            const armGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 8);
+            const arm = new THREE.Mesh(armGeom, armMat);
+            arm.position.set(x * 0.8, 0, z * 0.8);
+            arm.rotation.z = Math.PI / 2;
+            group.add(arm);
+            const propGeom = new THREE.CircleGeometry(0.1, 16);
+            const propMat = new THREE.MeshStandardMaterial({ color: '#666666', side: THREE.DoubleSide });
+            const prop = new THREE.Mesh(propGeom, propMat);
+            prop.position.set(x * 0.8, 0.08, z * 0.8);
+            prop.rotation.x = -Math.PI / 2;
+            group.add(prop);
+        });
+        const eyeGeom = new THREE.SphereGeometry(0.05, 8, 8);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: '#FF0000', emissive: '#FF0000', emissiveIntensity: 0.5 });
+        const eye = new THREE.Mesh(eyeGeom, eyeMat);
+        eye.position.set(0, -0.08, 0.1);
+        group.add(eye);
+        return group;
+    }
+
+    // === MEDIEVAL DECORATIONS ===
+    createTorch(color, properties = {}) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const handleGeom = new THREE.CylinderGeometry(0.03, 0.04, 0.4, 8);
+        const handle = new THREE.Mesh(handleGeom, woodMat);
+        group.add(handle);
+        const headGeom = new THREE.CylinderGeometry(0.06, 0.04, 0.15, 8);
+        const headMat = new THREE.MeshStandardMaterial({ color: '#4A3728' });
+        const head = new THREE.Mesh(headGeom, headMat);
+        head.position.y = 0.25;
+        group.add(head);
+        if (properties.fire) {
+            const fireMat = new THREE.MeshStandardMaterial({ color: '#FF4500', emissive: '#FF4500', emissiveIntensity: 0.8 });
+            const fireGeom = new THREE.ConeGeometry(0.08, 0.2, 8);
+            const fire = new THREE.Mesh(fireGeom, fireMat);
+            fire.position.y = 0.4;
+            group.add(fire);
+            const light = new THREE.PointLight(0xFF6600, 0.5, 3);
+            light.position.y = 0.4;
+            group.add(light);
+        }
+        return group;
+    }
+
+    createArmorStand(color) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const baseMat = new THREE.MeshStandardMaterial({ color: '#4A3728' });
+        const baseGeom = new THREE.CylinderGeometry(0.3, 0.35, 0.1, 16);
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        base.position.y = 0.05;
+        group.add(base);
+        const poleGeom = new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8);
+        const pole = new THREE.Mesh(poleGeom, baseMat);
+        pole.position.y = 1;
+        group.add(pole);
+        const helmetGeom = new THREE.SphereGeometry(0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+        const helmet = new THREE.Mesh(helmetGeom, metalMat);
+        helmet.position.y = 1.85;
+        group.add(helmet);
+        const chestGeom = new THREE.BoxGeometry(0.4, 0.5, 0.2);
+        const chest = new THREE.Mesh(chestGeom, metalMat);
+        chest.position.y = 1.4;
+        group.add(chest);
+        [-0.25, 0.25].forEach(x => {
+            const shoulderGeom = new THREE.SphereGeometry(0.1, 8, 8);
+            const shoulder = new THREE.Mesh(shoulderGeom, metalMat);
+            shoulder.position.set(x, 1.55, 0);
+            group.add(shoulder);
+        });
+        return group;
+    }
+
+    createBarrel(color) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const barrelGeom = new THREE.CylinderGeometry(0.3, 0.35, 0.8, 12);
+        const barrel = new THREE.Mesh(barrelGeom, woodMat);
+        barrel.position.y = 0.4;
+        group.add(barrel);
+        const bandMat = new THREE.MeshStandardMaterial({ color: '#4A4A4A', metalness: 0.6 });
+        [0.15, 0.45, 0.65].forEach(y => {
+            const bandGeom = new THREE.TorusGeometry(0.32, 0.02, 8, 24);
+            const band = new THREE.Mesh(bandGeom, bandMat);
+            band.position.y = y;
+            band.rotation.x = Math.PI / 2;
+            group.add(band);
+        });
+        return group;
+    }
+
+    createBanner(color, properties = {}) {
+        const group = new THREE.Group();
+        const fabricMat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide });
+        const bannerGeom = new THREE.PlaneGeometry(0.8, 1.5);
+        const banner = new THREE.Mesh(bannerGeom, fabricMat);
+        group.add(banner);
+        const poleMat = new THREE.MeshStandardMaterial({ color: '#8B4513' });
+        const poleGeom = new THREE.CylinderGeometry(0.02, 0.02, 1.8, 8);
+        const pole = new THREE.Mesh(poleGeom, poleMat);
+        pole.position.y = 0.9;
+        group.add(pole);
+        const emblemMat = new THREE.MeshStandardMaterial({ color: '#FFD700' });
+        const emblemGeom = new THREE.CircleGeometry(0.2, 16);
+        const emblem = new THREE.Mesh(emblemGeom, emblemMat);
+        emblem.position.z = 0.01;
+        group.add(emblem);
+        return group;
+    }
+
+    createSwordDisplay(color) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.8 });
+        const bladeGeom = new THREE.BoxGeometry(0.05, 1, 0.01);
+        const blade = new THREE.Mesh(bladeGeom, metalMat);
+        group.add(blade);
+        const guardGeom = new THREE.BoxGeometry(0.3, 0.05, 0.05);
+        const guardMat = new THREE.MeshStandardMaterial({ color: '#FFD700', metalness: 0.8 });
+        const guard = new THREE.Mesh(guardGeom, guardMat);
+        guard.position.y = -0.5;
+        group.add(guard);
+        const handleGeom = new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8);
+        const handleMat = new THREE.MeshStandardMaterial({ color: '#4A3728' });
+        const handle = new THREE.Mesh(handleGeom, handleMat);
+        handle.position.y = -0.65;
+        group.add(handle);
+        const pommelGeom = new THREE.SphereGeometry(0.04, 8, 8);
+        const pommel = new THREE.Mesh(pommelGeom, guardMat);
+        pommel.position.y = -0.78;
+        group.add(pommel);
+        return group;
+    }
+
+    createChest(color) {
+        const group = new THREE.Group();
+        const woodMat = new THREE.MeshStandardMaterial({ color: color });
+        const baseGeom = new THREE.BoxGeometry(0.8, 0.5, 0.5);
+        const base = new THREE.Mesh(baseGeom, woodMat);
+        base.position.y = 0.25;
+        group.add(base);
+        const lidGeom = new THREE.BoxGeometry(0.85, 0.15, 0.55);
+        const lid = new THREE.Mesh(lidGeom, woodMat);
+        lid.position.y = 0.575;
+        group.add(lid);
+        const metalMat = new THREE.MeshStandardMaterial({ color: '#4A4A4A', metalness: 0.6 });
+        const lockGeom = new THREE.BoxGeometry(0.1, 0.15, 0.05);
+        const lock = new THREE.Mesh(lockGeom, metalMat);
+        lock.position.set(0, 0.4, 0.28);
+        group.add(lock);
+        return group;
+    }
+
+    // === COMMON DECORATIONS ===
+    createPottedPlant(color) {
+        const group = new THREE.Group();
+        const potGeom = new THREE.CylinderGeometry(0.2, 0.15, 0.3, 12);
+        const potMat = new THREE.MeshStandardMaterial({ color: '#8B4513' });
+        const pot = new THREE.Mesh(potGeom, potMat);
+        pot.position.y = 0.15;
+        group.add(pot);
+        const soilGeom = new THREE.CircleGeometry(0.18, 12);
+        const soilMat = new THREE.MeshStandardMaterial({ color: '#3D2914' });
+        const soil = new THREE.Mesh(soilGeom, soilMat);
+        soil.rotation.x = -Math.PI / 2;
+        soil.position.y = 0.3;
+        group.add(soil);
+        const leafMat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide });
+        for (let i = 0; i < 8; i++) {
+            const leafGeom = new THREE.PlaneGeometry(0.15, 0.4);
+            const leaf = new THREE.Mesh(leafGeom, leafMat);
+            const angle = (i / 8) * Math.PI * 2;
+            leaf.position.set(Math.cos(angle) * 0.08, 0.5, Math.sin(angle) * 0.08);
+            leaf.rotation.y = angle;
+            leaf.rotation.x = -0.3;
+            group.add(leaf);
+        }
+        return group;
+    }
+
+    createFloorLamp(color) {
+        const group = new THREE.Group();
+        const baseGeom = new THREE.CylinderGeometry(0.2, 0.25, 0.05, 16);
+        const baseMat = new THREE.MeshStandardMaterial({ color: '#1A1A1A' });
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        base.position.y = 0.025;
+        group.add(base);
+        const poleGeom = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8);
+        const poleMat = new THREE.MeshStandardMaterial({ color: '#C0C0C0', metalness: 0.8 });
+        const pole = new THREE.Mesh(poleGeom, poleMat);
+        pole.position.y = 0.8;
+        group.add(pole);
+        const shadeGeom = new THREE.CylinderGeometry(0.25, 0.35, 0.3, 16, 1, true);
+        const shadeMat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, emissive: color, emissiveIntensity: 0.2 });
+        const shade = new THREE.Mesh(shadeGeom, shadeMat);
+        shade.position.y = 1.6;
+        group.add(shade);
+        const light = new THREE.PointLight(0xFFFFAA, 0.5, 4);
+        light.position.y = 1.5;
+        group.add(light);
+        return group;
     }
 
     // Video seslerini aç (kullanıcı interaction sonrası)
