@@ -231,17 +231,45 @@ class RoomPreview {
             });
         }
 
-        // Add decorations if provided
+        // Add decorations if provided (async loading)
         const decorations = design.extra_features?.decorations || [];
         decorations.forEach(deco => {
             this.createDecoration(deco);
         });
     }
 
-    createDecoration(deco) {
+    async createDecoration(deco) {
         const { type, position, scale, color, properties } = deco;
         let mesh = null;
 
+        // Try to load 3D model first
+        if (typeof modelLoader !== 'undefined' && modelLoader.hasModel(type)) {
+            try {
+                mesh = await modelLoader.loadModel(type);
+                if (mesh) {
+                    // Apply color tint if specified
+                    if (color) {
+                        modelLoader.applyColorTint(mesh, color);
+                    }
+                    // Position and scale
+                    mesh.position.set(position[0], position[1], position[2]);
+                    mesh.scale.multiply(new THREE.Vector3(scale[0], scale[1], scale[2]));
+                    this.scene.add(mesh);
+                    this.currentRoomMeshes.push(mesh);
+
+                    // Make decoration draggable
+                    mesh.userData.isDraggable = true;
+                    mesh.userData.decorationData = deco;
+                    this.draggableObjects.push(mesh);
+                    this.decorationDataMap.set(mesh, deco);
+                    return;
+                }
+            } catch (error) {
+                console.warn(`Failed to load model for ${type}, falling back to primitive:`, error);
+            }
+        }
+
+        // Fallback to primitive geometry
         switch (type) {
             // === CHRISTMAS DECORATIONS ===
             case 'christmas_tree':
