@@ -86,11 +86,26 @@ class ModelLoader {
                 (gltf) => {
                     const model = gltf.scene;
 
-                    // Setup shadows for all meshes
+                    // Setup materials and shadows for all meshes
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+
+                            // Fix material encoding for proper colors
+                            if (child.material) {
+                                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                                materials.forEach(mat => {
+                                    // Ensure proper color encoding
+                                    if (mat.map) {
+                                        mat.map.encoding = THREE.sRGBEncoding;
+                                    }
+                                    // Make sure material responds to light properly
+                                    if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
+                                        mat.needsUpdate = true;
+                                    }
+                                });
+                            }
                         }
                     });
 

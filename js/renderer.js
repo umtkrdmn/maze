@@ -40,13 +40,17 @@ class Renderer {
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
+        // GLTF modelleri için doğru renk çıktısı
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.2;
 
-        // Işıklandırma (daha iyi)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // Işıklandırma (GLTF modeller için artırıldı)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         this.scene.add(ambientLight);
 
         // Ana ışık (yukarıdan)
-        const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
         topLight.position.set(0, 5, 0);
         topLight.castShadow = true;
         this.scene.add(topLight);
