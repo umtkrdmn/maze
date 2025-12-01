@@ -62,8 +62,6 @@ class RoomPreview {
         this.renderer.shadowMap.enabled = true;
         // GLTF modelleri için doğru renk çıktısı
         this.renderer.outputEncoding = THREE.sRGBEncoding;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
 
         // Add lights
         this.addLights();
@@ -251,10 +249,7 @@ class RoomPreview {
             try {
                 mesh = await modelLoader.loadModel(type);
                 if (mesh) {
-                    // Apply color tint if specified
-                    if (color) {
-                        modelLoader.applyColorTint(mesh, color);
-                    }
+                    // GLTF modelleri kendi renklerine sahip, tint uygulanmaz
                     // Position and scale
                     mesh.position.set(position[0], position[1], position[2]);
                     mesh.scale.multiply(new THREE.Vector3(scale[0], scale[1], scale[2]));

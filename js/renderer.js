@@ -42,15 +42,13 @@ class Renderer {
         this.renderer.shadowMap.enabled = true;
         // GLTF modelleri için doğru renk çıktısı
         this.renderer.outputEncoding = THREE.sRGBEncoding;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
 
-        // Işıklandırma (GLTF modeller için artırıldı)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        // Işıklandırma
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
 
         // Ana ışık (yukarıdan)
-        const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
         topLight.position.set(0, 5, 0);
         topLight.castShadow = true;
         this.scene.add(topLight);
@@ -157,10 +155,7 @@ class Renderer {
             try {
                 const mesh = await modelLoader.loadModel(type);
                 if (mesh) {
-                    // Apply color tint if specified
-                    if (color) {
-                        modelLoader.applyColorTint(mesh, color);
-                    }
+                    // GLTF modelleri kendi renklerine sahip, tint uygulanmaz
                     mesh.position.set(position[0], position[1], position[2]);
                     mesh.scale.multiply(new THREE.Vector3(scale[0], scale[1], scale[2]));
                     this.scene.add(mesh);
