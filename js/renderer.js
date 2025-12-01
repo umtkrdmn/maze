@@ -40,8 +40,6 @@ class Renderer {
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
-        // GLTF modelleri için doğru renk çıktısı
-        this.renderer.outputEncoding = THREE.sRGBEncoding;
 
         // Işıklandırma
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);

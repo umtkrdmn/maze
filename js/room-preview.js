@@ -60,8 +60,6 @@ class RoomPreview {
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
         this.renderer.setSize(width, height);
         this.renderer.shadowMap.enabled = true;
-        // GLTF modelleri için doğru renk çıktısı
-        this.renderer.outputEncoding = THREE.sRGBEncoding;
 
         // Add lights
         this.addLights();
