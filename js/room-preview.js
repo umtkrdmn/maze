@@ -12,6 +12,27 @@ class RoomPreview {
         this.wallHeight = 5;
         this.animationId = null;
 
+        // Drag-and-drop properties
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+        this.draggableObjects = [];  // Meshes that can be dragged
+        this.decorationDataMap = new Map();  // Map mesh to decoration data
+        this.selectedObject = null;
+        this.isDragging = false;
+        this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);  // Horizontal plane
+        this.dragOffset = new THREE.Vector3();
+        this.onDecorationMoved = null;  // Callback when decoration is moved
+
+        // FPS-style camera controls
+        this.moveSpeed = 0.08;
+        this.lookSpeed = 0.002;
+        this.keys = { w: false, a: false, s: false, d: false };
+        this.yaw = 0;    // Horizontal rotation (left-right)
+        this.pitch = 0;  // Vertical rotation (up-down)
+        this.isLooking = false;  // True when right mouse button is held
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+
         this.init();
     }
 
@@ -45,6 +66,22 @@ class RoomPreview {
 
         // Handle window resize
         window.addEventListener('resize', () => this.onResize());
+
+        // Keyboard controls for movement (WASD)
+        window.addEventListener('keydown', (e) => this.onKeyDown(e));
+        window.addEventListener('keyup', (e) => this.onKeyUp(e));
+
+        // Mouse controls - left click for dragging, right click for looking
+        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+        this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());  // Disable right-click menu
+
+        // Touch support
+        this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e));
+        this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e));
+        this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e));
 
         // Start animation loop
         this.animate();
@@ -139,10 +176,22 @@ class RoomPreview {
             this.scene.remove(mesh);
         });
         this.currentRoomMeshes = [];
+
+        // Clear drag-and-drop data
+        this.draggableObjects = [];
+        this.decorationDataMap.clear();
+        this.selectedObject = null;
+        this.isDragging = false;
     }
 
     renderRoom(roomData, design = {}) {
         this.clearRoom();
+
+        // Reset camera to center of room
+        this.camera.position.set(0, 1.7, 0);
+        this.yaw = 0;
+        this.pitch = 0;
+        this.updateCameraRotation();
 
         // Extract room properties
         const doors = {
@@ -182,17 +231,42 @@ class RoomPreview {
             });
         }
 
-        // Add decorations if provided
+        // Add decorations if provided (async loading)
         const decorations = design.extra_features?.decorations || [];
         decorations.forEach(deco => {
             this.createDecoration(deco);
         });
     }
 
-    createDecoration(deco) {
+    async createDecoration(deco) {
         const { type, position, scale, color, properties } = deco;
         let mesh = null;
 
+        // Try to load 3D model first
+        if (typeof modelLoader !== 'undefined' && modelLoader.hasModel(type)) {
+            try {
+                mesh = await modelLoader.loadModel(type);
+                if (mesh) {
+                    // GLTF modelleri kendi renklerine sahip, tint uygulanmaz
+                    // Position and scale
+                    mesh.position.set(position[0], position[1], position[2]);
+                    mesh.scale.multiply(new THREE.Vector3(scale[0], scale[1], scale[2]));
+                    this.scene.add(mesh);
+                    this.currentRoomMeshes.push(mesh);
+
+                    // Make decoration draggable
+                    mesh.userData.isDraggable = true;
+                    mesh.userData.decorationData = deco;
+                    this.draggableObjects.push(mesh);
+                    this.decorationDataMap.set(mesh, deco);
+                    return;
+                }
+            } catch (error) {
+                console.warn(`Failed to load model for ${type}, falling back to primitive:`, error);
+            }
+        }
+
+        // Fallback to primitive geometry
         switch (type) {
             // === CHRISTMAS DECORATIONS ===
             case 'christmas_tree':
@@ -394,6 +468,12 @@ class RoomPreview {
             mesh.scale.set(scale[0], scale[1], scale[2]);
             this.scene.add(mesh);
             this.currentRoomMeshes.push(mesh);
+
+            // Make decoration draggable
+            mesh.userData.isDraggable = true;
+            mesh.userData.decorationData = deco;
+            this.draggableObjects.push(mesh);
+            this.decorationDataMap.set(mesh, deco);
         }
     }
 
@@ -2384,19 +2464,327 @@ class RoomPreview {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
 
-        // Camera stays inside the room and rotates to look around (360 view)
-        const time = Date.now() * 0.0003;
-        const lookRadius = 5;
+        // Process WASD movement
+        this.processMovement();
 
-        // Camera stays at center, looks at different walls
-        this.camera.position.set(0, 1.7, 0);
-        this.camera.lookAt(
-            Math.sin(time) * lookRadius,
-            1.7,
-            Math.cos(time) * lookRadius
-        );
+        // Update camera rotation based on yaw and pitch
+        this.updateCameraRotation();
 
         this.renderer.render(this.scene, this.camera);
+    }
+
+    processMovement() {
+        // Calculate forward and right vectors based on yaw
+        const forward = new THREE.Vector3(
+            -Math.sin(this.yaw),
+            0,
+            -Math.cos(this.yaw)
+        );
+        const right = new THREE.Vector3(
+            Math.cos(this.yaw),
+            0,
+            -Math.sin(this.yaw)
+        );
+
+        // Apply movement based on keys pressed
+        const movement = new THREE.Vector3();
+
+        if (this.keys.w) movement.add(forward);
+        if (this.keys.s) movement.sub(forward);
+        if (this.keys.d) movement.add(right);
+        if (this.keys.a) movement.sub(right);
+
+        if (movement.length() > 0) {
+            movement.normalize().multiplyScalar(this.moveSpeed);
+
+            // Calculate new position
+            const newX = this.camera.position.x + movement.x;
+            const newZ = this.camera.position.z + movement.z;
+
+            // Clamp to room bounds (with margin for walls)
+            const margin = 0.5;
+            const maxPos = (this.roomSize / 2) - margin;
+
+            this.camera.position.x = Math.max(-maxPos, Math.min(maxPos, newX));
+            this.camera.position.z = Math.max(-maxPos, Math.min(maxPos, newZ));
+        }
+    }
+
+    updateCameraRotation() {
+        // Create rotation from yaw and pitch
+        const euler = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
+        this.camera.quaternion.setFromEuler(euler);
+    }
+
+    onKeyDown(event) {
+        // Only process if canvas is visible/active
+        if (!this.canvas.offsetParent) return;
+
+        const key = event.key.toLowerCase();
+        if (key in this.keys) {
+            this.keys[key] = true;
+            event.preventDefault();
+        }
+    }
+
+    onKeyUp(event) {
+        const key = event.key.toLowerCase();
+        if (key in this.keys) {
+            this.keys[key] = false;
+        }
+    }
+
+    // === DRAG AND DROP + CAMERA LOOK METHODS ===
+
+    getMousePosition(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    onMouseDown(event) {
+        event.preventDefault();
+
+        // Right-click: start looking mode
+        if (event.button === 2) {
+            this.isLooking = true;
+            this.lastMouseX = event.clientX;
+            this.lastMouseY = event.clientY;
+            this.canvas.style.cursor = 'move';
+            return;
+        }
+
+        // Left-click: drag objects
+        if (event.button === 0) {
+            this.getMousePosition(event);
+
+            // Raycast to find draggable objects
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            // We need to check all children of draggable groups, not just top-level meshes
+            const allDraggableChildren = [];
+            this.draggableObjects.forEach(obj => {
+                if (obj.type === 'Group') {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            child.userData.parentDraggable = obj;
+                            allDraggableChildren.push(child);
+                        }
+                    });
+                } else {
+                    allDraggableChildren.push(obj);
+                }
+            });
+
+            const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
+
+            if (intersects.length > 0) {
+                // Get the top-level draggable object
+                let hitObject = intersects[0].object;
+                if (hitObject.userData.parentDraggable) {
+                    hitObject = hitObject.userData.parentDraggable;
+                } else {
+                    // Find the parent that is in draggableObjects
+                    while (hitObject.parent && !this.draggableObjects.includes(hitObject)) {
+                        hitObject = hitObject.parent;
+                    }
+                }
+
+                if (this.draggableObjects.includes(hitObject)) {
+                    this.selectedObject = hitObject;
+                    this.isDragging = true;
+
+                    // Update drag plane to be at the object's Y position
+                    this.dragPlane.constant = -hitObject.position.y;
+
+                    // Calculate offset
+                    const intersection = new THREE.Vector3();
+                    this.raycaster.ray.intersectPlane(this.dragPlane, intersection);
+                    this.dragOffset.copy(hitObject.position).sub(intersection);
+
+                    // Change cursor
+                    this.canvas.style.cursor = 'grabbing';
+
+                    // Highlight selected object
+                    this.highlightObject(hitObject, true);
+                }
+            }
+        }
+    }
+
+    onMouseMove(event) {
+        event.preventDefault();
+
+        // Camera look mode (right-click held)
+        if (this.isLooking) {
+            const deltaX = event.clientX - this.lastMouseX;
+            const deltaY = event.clientY - this.lastMouseY;
+
+            this.yaw -= deltaX * this.lookSpeed;
+            this.pitch -= deltaY * this.lookSpeed;
+
+            // Clamp pitch to prevent flipping
+            this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+
+            this.lastMouseX = event.clientX;
+            this.lastMouseY = event.clientY;
+            return;
+        }
+
+        this.getMousePosition(event);
+
+        // Object dragging mode (left-click held)
+        if (this.isDragging && this.selectedObject) {
+            // Move object on horizontal plane
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const intersection = new THREE.Vector3();
+            if (this.raycaster.ray.intersectPlane(this.dragPlane, intersection)) {
+                const newX = intersection.x + this.dragOffset.x;
+                const newZ = intersection.z + this.dragOffset.z;
+
+                // Clamp to room bounds (with some margin)
+                const margin = 0.5;
+                const maxPos = (this.roomSize / 2) - margin;
+                this.selectedObject.position.x = Math.max(-maxPos, Math.min(maxPos, newX));
+                this.selectedObject.position.z = Math.max(-maxPos, Math.min(maxPos, newZ));
+
+                // Update decoration data
+                const decoData = this.decorationDataMap.get(this.selectedObject);
+                if (decoData) {
+                    decoData.position[0] = this.selectedObject.position.x;
+                    decoData.position[2] = this.selectedObject.position.z;
+                }
+            }
+        } else {
+            // Hover effect
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const allDraggableChildren = [];
+            this.draggableObjects.forEach(obj => {
+                if (obj.type === 'Group') {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            child.userData.parentDraggable = obj;
+                            allDraggableChildren.push(child);
+                        }
+                    });
+                } else {
+                    allDraggableChildren.push(obj);
+                }
+            });
+
+            const intersects = this.raycaster.intersectObjects(allDraggableChildren, false);
+            if (intersects.length > 0) {
+                this.canvas.style.cursor = 'grab';
+            } else {
+                this.canvas.style.cursor = 'crosshair';
+            }
+        }
+    }
+
+    onMouseUp(event) {
+        // Stop looking mode
+        if (this.isLooking) {
+            this.isLooking = false;
+            this.canvas.style.cursor = 'crosshair';
+        }
+
+        // Stop dragging mode
+        if (this.isDragging && this.selectedObject) {
+            // Remove highlight
+            this.highlightObject(this.selectedObject, false);
+
+            // Notify callback
+            if (this.onDecorationMoved) {
+                this.onDecorationMoved(this.getUpdatedDecorations());
+            }
+        }
+
+        this.isDragging = false;
+        this.selectedObject = null;
+    }
+
+    // Touch support - single touch drags, two-finger touch looks
+    onTouchStart(event) {
+        event.preventDefault();
+        if (event.touches.length === 1) {
+            const touch = event.touches[0];
+            this.onMouseDown({ button: 0, clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        } else if (event.touches.length === 2) {
+            // Two-finger touch starts look mode
+            this.isLooking = true;
+            const touch = event.touches[0];
+            this.lastMouseX = touch.clientX;
+            this.lastMouseY = touch.clientY;
+        }
+    }
+
+    onTouchMove(event) {
+        event.preventDefault();
+        if (event.touches.length === 2 && this.isLooking) {
+            // Two-finger drag for looking
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - this.lastMouseX;
+            const deltaY = touch.clientY - this.lastMouseY;
+
+            this.yaw -= deltaX * this.lookSpeed;
+            this.pitch -= deltaY * this.lookSpeed;
+            this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+
+            this.lastMouseX = touch.clientX;
+            this.lastMouseY = touch.clientY;
+        } else if (event.touches.length === 1 && this.isDragging) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        }
+    }
+
+    onTouchEnd(event) {
+        this.onMouseUp(event);
+    }
+
+    highlightObject(object, highlight) {
+        const emissiveColor = highlight ? 0x444444 : 0x000000;
+
+        if (object.type === 'Group') {
+            object.traverse(child => {
+                if (child.isMesh && child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.emissive) m.emissive.setHex(emissiveColor);
+                        });
+                    } else if (child.material.emissive) {
+                        child.material.emissive.setHex(emissiveColor);
+                    }
+                }
+            });
+        } else if (object.isMesh && object.material) {
+            if (Array.isArray(object.material)) {
+                object.material.forEach(m => {
+                    if (m.emissive) m.emissive.setHex(emissiveColor);
+                });
+            } else if (object.material.emissive) {
+                object.material.emissive.setHex(emissiveColor);
+            }
+        }
+    }
+
+    getUpdatedDecorations() {
+        const decorations = [];
+        this.decorationDataMap.forEach((data, mesh) => {
+            decorations.push({
+                ...data,
+                position: [mesh.position.x, mesh.position.y, mesh.position.z]
+            });
+        });
+        return decorations;
+    }
+
+    // Set callback for when decorations are moved
+    setOnDecorationMoved(callback) {
+        this.onDecorationMoved = callback;
     }
 
     destroy() {

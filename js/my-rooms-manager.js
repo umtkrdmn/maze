@@ -9,6 +9,7 @@ class MyRoomsManager {
         this.selectedRoom = null;
         this.templates = [];
         this.initialized = false;
+        this.currentDecorations = null;  // Track decoration positions
 
         // Purchase flow state
         this.purchaseState = {
@@ -37,6 +38,10 @@ class MyRoomsManager {
             // Initialize RoomPreview if not already done
             if (!this.roomPreview) {
                 this.roomPreview = new RoomPreview(this.canvas);
+                // Set callback for when decorations are moved
+                this.roomPreview.setOnDecorationMoved((decorations) => {
+                    this.currentDecorations = decorations;
+                });
             }
 
             // Get current user info
@@ -196,6 +201,9 @@ class MyRoomsManager {
                 };
             }
         }
+
+        // Initialize currentDecorations with the decorations being rendered
+        this.currentDecorations = designToRender.extra_features?.decorations || null;
 
         // Render room in 3D
         this.roomPreview.renderRoom(room, designToRender);
@@ -703,6 +711,10 @@ class MyRoomsManager {
                     await this.api.applyTemplate(this.selectedRoom.id, template.name);
                     this.selectedRoom.design = this.getTemplateDesign(template.name);
                     this.selectedRoom.design.template = template.name;
+
+                    // Dekorasyon pozisyonlarını güncelle
+                    this.currentDecorations = this.selectedRoom.design.extra_features?.decorations || null;
+
                     this.roomPreview.renderRoom(this.selectedRoom, this.selectedRoom.design);
 
                     // Renk panelini güncelle
@@ -871,6 +883,13 @@ class MyRoomsManager {
                 floor_color: document.getElementById('edit-floor-color').value,
                 ceiling_color: document.getElementById('edit-ceiling-color').value
             };
+
+            // Include decoration positions if they've been modified
+            if (this.currentDecorations) {
+                designData.extra_features = {
+                    decorations: this.currentDecorations
+                };
+            }
 
             await this.api.updateRoomDesign(this.selectedRoom.id, designData);
 

@@ -41,7 +41,7 @@ class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
 
-        // Işıklandırma (daha iyi)
+        // Işıklandırma
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
 
@@ -141,19 +141,41 @@ class Renderer {
         // Design verisi varsa ve dekorasyonlar tanımlıysa render et
         const decorations = room.design?.extra_features?.decorations || [];
         decorations.forEach(deco => {
-            const mesh = this.createDecoration(deco);
-            if (mesh) {
-                mesh.position.set(deco.position[0], deco.position[1], deco.position[2]);
-                mesh.scale.set(deco.scale[0], deco.scale[1], deco.scale[2]);
-                this.scene.add(mesh);
-                this.currentRoomMeshes.push(mesh);
-            }
+            this.createDecoration(deco);
         });
     }
 
-    createDecoration(deco) {
-        const { type, color, properties } = deco;
+    async createDecoration(deco) {
+        const { type, position, scale, color, properties } = deco;
 
+        // Try to load 3D model first
+        if (typeof modelLoader !== 'undefined' && modelLoader.hasModel(type)) {
+            try {
+                const mesh = await modelLoader.loadModel(type);
+                if (mesh) {
+                    // GLTF modelleri kendi renklerine sahip, tint uygulanmaz
+                    mesh.position.set(position[0], position[1], position[2]);
+                    mesh.scale.multiply(new THREE.Vector3(scale[0], scale[1], scale[2]));
+                    this.scene.add(mesh);
+                    this.currentRoomMeshes.push(mesh);
+                    return;
+                }
+            } catch (error) {
+                console.warn(`Failed to load model for ${type}, using primitive:`, error);
+            }
+        }
+
+        // Fallback to primitive geometry
+        const mesh = this.createPrimitiveDecoration(type, color, properties);
+        if (mesh) {
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.scale.set(scale[0], scale[1], scale[2]);
+            this.scene.add(mesh);
+            this.currentRoomMeshes.push(mesh);
+        }
+    }
+
+    createPrimitiveDecoration(type, color, properties) {
         switch (type) {
             // === CHRISTMAS DECORATIONS ===
             case 'christmas_tree': return this.createChristmasTree(color, properties);
