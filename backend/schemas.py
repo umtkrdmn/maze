@@ -101,6 +101,70 @@ class RoomAdCreate(BaseModel):
     click_url: Optional[str] = None
 
 
+# Door Lock System Schemas
+class AdLockSettingsUpdate(BaseModel):
+    lock_type: str  # none, timer, quiz
+    lock_timer_seconds: Optional[int] = 10
+    ad_description: Optional[str] = None
+
+
+class GenerateQuestionsRequest(BaseModel):
+    question_count: int = 3
+    option_count: int = 4
+
+
+class AdQuestionCreate(BaseModel):
+    question_text: str
+    options: List[str]
+    correct_option_index: int
+    order: Optional[int] = 0
+
+
+class AdQuestionUpdate(BaseModel):
+    question_text: Optional[str] = None
+    options: Optional[List[str]] = None
+    correct_option_index: Optional[int] = None
+    order: Optional[int] = None
+
+
+class AdQuestionResponse(BaseModel):
+    id: int
+    question_text: str
+    options: List[str]
+    correct_option_index: int
+    order: int
+
+    class Config:
+        from_attributes = True
+
+
+class QuizAnswerRequest(BaseModel):
+    question_id: int
+    selected_option_index: int
+
+
+class QuizAnswerResponse(BaseModel):
+    correct: bool
+    correct_option_index: int
+    unlock_doors: bool
+    cooldown_seconds: Optional[int] = None  # If wrong answer
+
+
+class DoorStatusResponse(BaseModel):
+    direction: str  # north, south, east, west
+    is_locked: bool
+    lock_type: Optional[str] = None  # timer, quiz
+    remaining_seconds: Optional[int] = None  # For timer mode
+    has_quiz: bool = False
+
+
+class RoomDoorStatusResponse(BaseModel):
+    entry_door: Optional[str] = None  # The door player entered from
+    doors: List[DoorStatusResponse]
+    has_ads: bool
+    timer_started_at: Optional[datetime] = None
+
+
 # Character Schemas
 class CharacterCreate(BaseModel):
     gender: Optional[str] = "male"

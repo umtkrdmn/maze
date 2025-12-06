@@ -763,6 +763,238 @@ class Renderer {
         this.currentRoomMeshes.push(sprite);
     }
 
+    // ==================== Card Reader System ====================
+
+    createCardReader(direction, x, z, isLocked = true, lockType = 'timer') {
+        // Create card reader group
+        const cardReaderGroup = new THREE.Group();
+        cardReaderGroup.userData.direction = direction;
+        cardReaderGroup.userData.isLocked = isLocked;
+
+        // Card reader body (dark gray box)
+        const bodyGeometry = new THREE.BoxGeometry(0.25, 0.4, 0.08);
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2d2d2d,
+            roughness: 0.7,
+            metalness: 0.3
+        });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        cardReaderGroup.add(body);
+
+        // Screen area (small dark rectangle)
+        const screenGeometry = new THREE.BoxGeometry(0.18, 0.15, 0.02);
+        const screenMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a1a1a,
+            roughness: 0.3,
+            metalness: 0.5
+        });
+        const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+        screen.position.set(0, 0.05, 0.04);
+        cardReaderGroup.add(screen);
+
+        // LED light (glowing sphere)
+        const ledGeometry = new THREE.SphereGeometry(0.03, 16, 16);
+        const ledColor = isLocked ? 0xff0000 : 0x00ff00;
+        const ledMaterial = new THREE.MeshStandardMaterial({
+            color: ledColor,
+            emissive: ledColor,
+            emissiveIntensity: 0.8,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        const led = new THREE.Mesh(ledGeometry, ledMaterial);
+        led.position.set(0, 0.15, 0.04);
+        led.userData.isLED = true;
+        cardReaderGroup.add(led);
+
+        // Point light for glow effect
+        const pointLight = new THREE.PointLight(ledColor, 0.5, 2);
+        pointLight.position.set(0, 0.15, 0.1);
+        pointLight.userData.isLEDLight = true;
+        cardReaderGroup.add(pointLight);
+
+        // Card slot
+        const slotGeometry = new THREE.BoxGeometry(0.15, 0.02, 0.03);
+        const slotMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0a,
+            roughness: 0.5,
+            metalness: 0.3
+        });
+        const slot = new THREE.Mesh(slotGeometry, slotMaterial);
+        slot.position.set(0, -0.1, 0.04);
+        cardReaderGroup.add(slot);
+
+        // Lock type icon (quiz or timer)
+        if (lockType === 'quiz') {
+            // Question mark icon
+            this.addQuizIcon(cardReaderGroup);
+        } else if (lockType === 'timer') {
+            // Clock icon
+            this.addTimerIcon(cardReaderGroup);
+        }
+
+        // Position based on door direction
+        const doorOffset = 1.3; // Distance from door center
+        const wallOffset = 0.05; // Distance from wall
+        const height = 1.5; // Eye level height
+
+        if (direction === 'north') {
+            cardReaderGroup.position.set(x + doorOffset, height, z + wallOffset);
+            cardReaderGroup.rotation.y = Math.PI;
+        } else if (direction === 'south') {
+            cardReaderGroup.position.set(x - doorOffset, height, z - wallOffset);
+            cardReaderGroup.rotation.y = 0;
+        } else if (direction === 'east') {
+            cardReaderGroup.position.set(x - wallOffset, height, z + doorOffset);
+            cardReaderGroup.rotation.y = Math.PI / 2;
+        } else if (direction === 'west') {
+            cardReaderGroup.position.set(x + wallOffset, height, z - doorOffset);
+            cardReaderGroup.rotation.y = -Math.PI / 2;
+        }
+
+        this.scene.add(cardReaderGroup);
+        this.currentRoomMeshes.push(cardReaderGroup);
+
+        // Store reference for updates
+        if (!this.cardReaders) this.cardReaders = {};
+        this.cardReaders[direction] = cardReaderGroup;
+
+        return cardReaderGroup;
+    }
+
+    addQuizIcon(group) {
+        // Create a simple "?" sprite
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'Bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', 32, 32);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true
+        });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(0.1, 0.1, 1);
+        sprite.position.set(0, -0.05, 0.05);
+        group.add(sprite);
+    }
+
+    addTimerIcon(group) {
+        // Create a simple clock sprite
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+
+        // Clock circle
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(32, 32, 20, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Clock hands
+        ctx.beginPath();
+        ctx.moveTo(32, 32);
+        ctx.lineTo(32, 18);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(32, 32);
+        ctx.lineTo(42, 32);
+        ctx.stroke();
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true
+        });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(0.1, 0.1, 1);
+        sprite.position.set(0, -0.05, 0.05);
+        group.add(sprite);
+    }
+
+    updateCardReaderStatus(direction, isLocked) {
+        if (!this.cardReaders || !this.cardReaders[direction]) return;
+
+        const cardReader = this.cardReaders[direction];
+        const ledColor = isLocked ? 0xff0000 : 0x00ff00;
+
+        cardReader.traverse((child) => {
+            if (child.userData.isLED) {
+                child.material.color.setHex(ledColor);
+                child.material.emissive.setHex(ledColor);
+            }
+            if (child.userData.isLEDLight) {
+                child.color.setHex(ledColor);
+            }
+        });
+
+        cardReader.userData.isLocked = isLocked;
+    }
+
+    updateAllCardReaders(doorStatus) {
+        if (!doorStatus || !doorStatus.doors) return;
+
+        doorStatus.doors.forEach(door => {
+            this.updateCardReaderStatus(door.direction, door.is_locked);
+        });
+    }
+
+    // Create card readers for all doors in the room
+    createCardReadersForRoom(room, doorStatus) {
+        // Clear existing card readers
+        this.cardReaders = {};
+
+        if (!doorStatus || !doorStatus.has_ads) return;
+
+        const halfSize = this.roomSize / 2;
+
+        // Get lock type from door status
+        let lockType = 'timer';
+        if (doorStatus.ads && doorStatus.ads.length > 0) {
+            const ad = doorStatus.ads.find(a => a.lock_type !== 'none');
+            if (ad) {
+                lockType = ad.lock_type;
+            }
+        }
+
+        // Create card reader for each door
+        ['north', 'south', 'east', 'west'].forEach(direction => {
+            const hasDoor = room.doors[direction];
+            if (!hasDoor) return;
+
+            // Find door status
+            const door = doorStatus.doors.find(d => d.direction === direction);
+            const isLocked = door ? door.is_locked : false;
+
+            // Position based on direction
+            let x, z;
+            if (direction === 'north') {
+                x = 0;
+                z = -halfSize;
+            } else if (direction === 'south') {
+                x = 0;
+                z = halfSize;
+            } else if (direction === 'east') {
+                x = halfSize;
+                z = 0;
+            } else if (direction === 'west') {
+                x = -halfSize;
+                z = 0;
+            }
+
+            this.createCardReader(direction, x, z, isLocked, lockType);
+        });
+    }
+
     addWallTexture(wall, textureUrl) {
         // Texture loader ile duvar texturu ekle (gelecek için)
         const loader = new THREE.TextureLoader();

@@ -143,9 +143,33 @@ class RoomAd(Base):
     height = Column(Float, default=4.5)
     position_y = Column(Float, default=2.5)
 
+    # Door lock settings
+    lock_type = Column(String(20), default="none")  # none, timer, quiz
+    lock_timer_seconds = Column(Integer, default=10)  # For timer mode
+    ad_description = Column(Text, nullable=True)  # For Gemini question generation
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     room = relationship("Room", back_populates="ads")
+    questions = relationship("AdQuestion", back_populates="ad", cascade="all, delete-orphan")
+
+
+class AdQuestion(Base):
+    __tablename__ = "ad_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ad_id = Column(Integer, ForeignKey("room_ads.id"), nullable=False)
+
+    question_text = Column(String(500), nullable=False)
+    options = Column(JSON, nullable=False)  # ["Option A", "Option B", "Option C", "Option D"]
+    correct_option_index = Column(Integer, nullable=False)  # 0, 1, 2, 3...
+    order = Column(Integer, default=0)  # Question order
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    ad = relationship("RoomAd", back_populates="questions")

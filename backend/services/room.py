@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 import random
 
-from models.maze import Room, RoomDesign, RoomAd, RoomTemplate
+from models.maze import Room, RoomDesign, RoomAd, RoomTemplate, AdQuestion
 from models.user import User
 from models.transaction import Transaction, TransactionType
 from config import settings
@@ -462,3 +462,220 @@ class RoomService:
         if ad:
             ad.click_count += 1
             await self.db.commit()
+
+    # ==================== Door Lock System Methods ====================
+
+    async def get_ad_by_id(self, ad_id: int) -> Optional[RoomAd]:
+        """Get an ad by ID with questions loaded"""
+        result = await self.db.execute(
+            select(RoomAd)
+            .options(selectinload(RoomAd.questions), selectinload(RoomAd.room))
+            .where(RoomAd.id == ad_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_ad_lock_settings(
+        self,
+        ad: RoomAd,
+        user: User,
+        lock_type: str,
+        lock_timer_seconds: int = 10,
+        ad_description: str = None
+    ) -> Dict[str, Any]:
+        """Update door lock settings for an ad"""
+        if ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        if lock_type not in ["none", "timer", "quiz"]:
+            return {"success": False, "error": "Invalid lock type"}
+
+        ad.lock_type = lock_type
+        ad.lock_timer_seconds = lock_timer_seconds
+        if ad_description is not None:
+            ad.ad_description = ad_description
+
+        await self.db.commit()
+        return {"success": True}
+
+    async def add_question(
+        self,
+        ad: RoomAd,
+        user: User,
+        question_text: str,
+        options: list,
+        correct_option_index: int,
+        order: int = 0
+    ) -> Dict[str, Any]:
+        """Add a question to an ad"""
+        if ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        question = AdQuestion(
+            ad_id=ad.id,
+            question_text=question_text,
+            options=options,
+            correct_option_index=correct_option_index,
+            order=order
+        )
+        self.db.add(question)
+        await self.db.commit()
+        await self.db.refresh(question)
+
+        return {"success": True, "question_id": question.id}
+
+    async def update_question(
+        self,
+        question_id: int,
+        user: User,
+        question_text: str = None,
+        options: list = None,
+        correct_option_index: int = None,
+        order: int = None
+    ) -> Dict[str, Any]:
+        """Update a question"""
+        result = await self.db.execute(
+            select(AdQuestion)
+            .options(selectinload(AdQuestion.ad).selectinload(RoomAd.room))
+            .where(AdQuestion.id == question_id)
+        )
+        question = result.scalar_one_or_none()
+
+        if not question:
+            return {"success": False, "error": "Question not found"}
+
+        if question.ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        if question_text is not None:
+            question.question_text = question_text
+        if options is not None:
+            question.options = options
+        if correct_option_index is not None:
+            question.correct_option_index = correct_option_index
+        if order is not None:
+            question.order = order
+
+        await self.db.commit()
+        return {"success": True}
+
+    async def delete_question(self, question_id: int, user: User) -> Dict[str, Any]:
+        """Delete a question"""
+        result = await self.db.execute(
+            select(AdQuestion)
+            .options(selectinload(AdQuestion.ad).selectinload(RoomAd.room))
+            .where(AdQuestion.id == question_id)
+        )
+        question = result.scalar_one_or_none()
+
+        if not question:
+            return {"success": False, "error": "Question not found"}
+
+        if question.ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        await self.db.delete(question)
+        await self.db.commit()
+        return {"success": True}
+
+    async def get_ad_questions(self, ad_id: int) -> List[AdQuestion]:
+        """Get all questions for an ad"""
+        result = await self.db.execute(
+            select(AdQuestion)
+            .where(AdQuestion.ad_id == ad_id)
+            .order_by(AdQuestion.order)
+        )
+        return result.scalars().all()
+
+    async def bulk_add_questions(
+        self,
+        ad: RoomAd,
+        user: User,
+        questions: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Add multiple questions at once (for Gemini-generated questions)"""
+        if ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        added_ids = []
+        for q in questions:
+            question = AdQuestion(
+                ad_id=ad.id,
+                question_text=q["question_text"],
+                options=q["options"],
+                correct_option_index=q["correct_option_index"],
+                order=q.get("order", len(added_ids))
+            )
+            self.db.add(question)
+            await self.db.flush()  # Get ID without committing
+            added_ids.append(question.id)
+
+        await self.db.commit()
+        return {"success": True, "question_ids": added_ids}
+
+    async def delete_all_questions(self, ad: RoomAd, user: User) -> Dict[str, Any]:
+        """Delete all questions for an ad"""
+        if ad.room.owner_id != user.id:
+            return {"success": False, "error": "You don't own this room"}
+
+        await self.db.execute(
+            AdQuestion.__table__.delete().where(AdQuestion.ad_id == ad.id)
+        )
+        await self.db.commit()
+        return {"success": True}
+
+    async def check_quiz_answer(
+        self,
+        question_id: int,
+        selected_option_index: int
+    ) -> Dict[str, Any]:
+        """Check if the quiz answer is correct"""
+        result = await self.db.execute(
+            select(AdQuestion).where(AdQuestion.id == question_id)
+        )
+        question = result.scalar_one_or_none()
+
+        if not question:
+            return {"success": False, "error": "Question not found"}
+
+        is_correct = question.correct_option_index == selected_option_index
+
+        return {
+            "success": True,
+            "correct": is_correct,
+            "correct_option_index": question.correct_option_index
+        }
+
+    async def get_room_ads_with_lock_info(self, room: Room) -> List[Dict[str, Any]]:
+        """Get all ads in a room with their lock information"""
+        result = await self.db.execute(
+            select(RoomAd)
+            .options(selectinload(RoomAd.questions))
+            .where(and_(RoomAd.room_id == room.id, RoomAd.is_active == True))
+        )
+        ads = result.scalars().all()
+
+        return [
+            {
+                "id": ad.id,
+                "wall": ad.wall,
+                "ad_type": ad.ad_type,
+                "content_url": ad.content_url,
+                "lock_type": ad.lock_type,
+                "lock_timer_seconds": ad.lock_timer_seconds,
+                "has_questions": len(ad.questions) > 0,
+                "question_count": len(ad.questions)
+            }
+            for ad in ads
+        ]
+
+    async def get_random_question_for_ad(self, ad_id: int) -> Optional[AdQuestion]:
+        """Get a random question for an ad"""
+        result = await self.db.execute(
+            select(AdQuestion).where(AdQuestion.ad_id == ad_id)
+        )
+        questions = result.scalars().all()
+
+        if not questions:
+            return None
+
+        return random.choice(questions)

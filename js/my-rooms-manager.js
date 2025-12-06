@@ -789,6 +789,7 @@ class MyRoomsManager {
                             <button class="btn btn-primary btn-add-ad" data-wall="${wall}">${ad ? 'Güncelle' : 'Ekle'}</button>
                             ${ad ? `<button class="btn btn-secondary btn-remove-ad" data-wall="${wall}">Kaldır</button>` : ''}
                         </div>
+                        ${ad ? this.renderLockSettings(ad, room.id) : ''}
                     </div>
                 ` : ''}
             `;
@@ -814,8 +815,436 @@ class MyRoomsManager {
                 if (removeBtn) {
                     removeBtn.addEventListener('click', () => this.removeAd(wall));
                 }
+
+                // Bind lock settings events
+                if (ad) {
+                    this.bindLockSettingsEvents(section, ad, room.id);
+                }
             }
         });
+    }
+
+    renderLockSettings(ad, roomId) {
+        const lockType = ad.lock_type || 'none';
+        const timerSeconds = ad.lock_timer_seconds || 10;
+
+        return `
+            <div class="lock-settings">
+                <h4>🔐 Kapı Kilidi Ayarları</h4>
+                <div class="lock-type-options">
+                    <label class="lock-option">
+                        <input type="radio" name="lock-type-${ad.id}" value="none" ${lockType === 'none' ? 'checked' : ''}>
+                        <span>Kilit Yok</span>
+                    </label>
+                    <label class="lock-option">
+                        <input type="radio" name="lock-type-${ad.id}" value="timer" ${lockType === 'timer' ? 'checked' : ''}>
+                        <span>⏱️ Zamanlayıcı</span>
+                    </label>
+                    <label class="lock-option">
+                        <input type="radio" name="lock-type-${ad.id}" value="quiz" ${lockType === 'quiz' ? 'checked' : ''}>
+                        <span>❓ Soru-Cevap</span>
+                    </label>
+                </div>
+
+                <div class="timer-settings" style="display: ${lockType === 'timer' ? 'block' : 'none'};">
+                    <label>Bekleme Süresi (saniye):</label>
+                    <input type="number" class="timer-seconds-input" value="${timerSeconds}" min="5" max="60">
+                </div>
+
+                <div class="quiz-settings" style="display: ${lockType === 'quiz' ? 'block' : 'none'};">
+                    <label>Reklam Açıklaması (Soru üretimi için):</label>
+                    <textarea class="ad-description-input" placeholder="Reklamın içeriğini açıklayın. Örn: Nike Air Max spor ayakkabı reklamı. Slogan: Just Do It. Fiyat: 2499 TL...">${ad.ad_description || ''}</textarea>
+
+                    <div class="gemini-generate-section">
+                        <div class="generate-options">
+                            <label>Soru Sayısı: <input type="number" class="question-count-input" value="3" min="1" max="10"></label>
+                            <label>Şık Sayısı: <input type="number" class="option-count-input" value="4" min="2" max="6"></label>
+                        </div>
+                        <button class="btn btn-primary btn-generate-questions" data-ad-id="${ad.id}" data-room-id="${roomId}">
+                            🤖 Gemini ile Soru Oluştur
+                        </button>
+                    </div>
+
+                    <div class="questions-list" id="questions-list-${ad.id}">
+                        <p class="loading-questions">Sorular yükleniyor...</p>
+                    </div>
+
+                    <button class="btn btn-secondary btn-add-manual-question" data-ad-id="${ad.id}" data-room-id="${roomId}">
+                        + Manuel Soru Ekle
+                    </button>
+                </div>
+
+                <button class="btn btn-primary btn-save-lock-settings" data-ad-id="${ad.id}" data-room-id="${roomId}">
+                    💾 Kilit Ayarlarını Kaydet
+                </button>
+            </div>
+        `;
+    }
+
+    bindLockSettingsEvents(section, ad, roomId) {
+        // Lock type radio buttons
+        const lockRadios = section.querySelectorAll(`input[name="lock-type-${ad.id}"]`);
+        const timerSettings = section.querySelector('.timer-settings');
+        const quizSettings = section.querySelector('.quiz-settings');
+
+        lockRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                timerSettings.style.display = radio.value === 'timer' ? 'block' : 'none';
+                quizSettings.style.display = radio.value === 'quiz' ? 'block' : 'none';
+            });
+        });
+
+        // Generate questions button
+        const generateBtn = section.querySelector('.btn-generate-questions');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => this.generateQuestions(section, ad, roomId));
+        }
+
+        // Add manual question button
+        const addQuestionBtn = section.querySelector('.btn-add-manual-question');
+        if (addQuestionBtn) {
+            addQuestionBtn.addEventListener('click', () => this.showManualQuestionForm(section, ad, roomId));
+        }
+
+        // Save lock settings button
+        const saveLockBtn = section.querySelector('.btn-save-lock-settings');
+        if (saveLockBtn) {
+            saveLockBtn.addEventListener('click', () => this.saveLockSettings(section, ad, roomId));
+        }
+
+        // Load existing questions
+        this.loadQuestions(ad.id, roomId, section);
+    }
+
+    async loadQuestions(adId, roomId, section) {
+        const questionsList = section.querySelector(`#questions-list-${adId}`);
+        if (!questionsList) return;
+
+        try {
+            const response = await fetch(`/api/room/${roomId}/ad/${adId}/questions`, {
+                headers: {
+                    'Authorization': `Bearer ${api.token}`
+                }
+            });
+            const data = await response.json();
+
+            if (data.questions && data.questions.length > 0) {
+                questionsList.innerHTML = data.questions.map(q => this.renderQuestion(q, adId, roomId)).join('');
+                this.bindQuestionEvents(questionsList, adId, roomId);
+            } else {
+                questionsList.innerHTML = '<p class="no-questions">Henüz soru eklenmemiş.</p>';
+            }
+        } catch (error) {
+            console.error('Failed to load questions:', error);
+            questionsList.innerHTML = '<p class="error">Sorular yüklenemedi.</p>';
+        }
+    }
+
+    renderQuestion(question, adId, roomId) {
+        const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+        return `
+            <div class="question-item" data-question-id="${question.id}">
+                <div class="question-header">
+                    <span class="question-number">#${question.order + 1}</span>
+                    <div class="question-actions">
+                        <button class="btn-icon btn-edit-question" title="Düzenle">✏️</button>
+                        <button class="btn-icon btn-delete-question" title="Sil">🗑️</button>
+                    </div>
+                </div>
+                <p class="question-text">${question.question_text}</p>
+                <div class="question-options">
+                    ${question.options.map((opt, i) => `
+                        <div class="option-item ${i === question.correct_option_index ? 'correct' : ''}">
+                            <span class="option-label">${optionLabels[i]})</span>
+                            <span class="option-text">${opt}</span>
+                            ${i === question.correct_option_index ? '<span class="correct-badge">✓</span>' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    bindQuestionEvents(questionsList, adId, roomId) {
+        questionsList.querySelectorAll('.btn-delete-question').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const questionItem = e.target.closest('.question-item');
+                const questionId = questionItem.dataset.questionId;
+
+                if (confirm('Bu soruyu silmek istediğinizden emin misiniz?')) {
+                    await this.deleteQuestion(questionId, adId, roomId, questionItem);
+                }
+            });
+        });
+
+        questionsList.querySelectorAll('.btn-edit-question').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const questionItem = e.target.closest('.question-item');
+                const questionId = questionItem.dataset.questionId;
+                this.showEditQuestionForm(questionId, adId, roomId, questionItem);
+            });
+        });
+    }
+
+    async deleteQuestion(questionId, adId, roomId, questionItem) {
+        try {
+            await fetch(`/api/room/${roomId}/ad/${adId}/questions/${questionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${api.token}`
+                }
+            });
+            questionItem.remove();
+            this.showNotification('Soru silindi!', 'success');
+        } catch (error) {
+            console.error('Failed to delete question:', error);
+            this.showNotification('Soru silinemedi!', 'error');
+        }
+    }
+
+    async generateQuestions(section, ad, roomId) {
+        const descriptionInput = section.querySelector('.ad-description-input');
+        const questionCountInput = section.querySelector('.question-count-input');
+        const optionCountInput = section.querySelector('.option-count-input');
+        const generateBtn = section.querySelector('.btn-generate-questions');
+
+        const description = descriptionInput.value.trim();
+        if (!description) {
+            this.showNotification('Lütfen reklam açıklaması girin!', 'error');
+            return;
+        }
+
+        // First save the description
+        await this.saveLockSettings(section, ad, roomId);
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = '⏳ Oluşturuluyor...';
+
+        try {
+            const response = await fetch(`/api/room/${roomId}/ad/${ad.id}/generate-questions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${api.token}`
+                },
+                body: JSON.stringify({
+                    question_count: parseInt(questionCountInput.value) || 3,
+                    option_count: parseInt(optionCountInput.value) || 4
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.questions) {
+                // Show questions for review
+                this.showGeneratedQuestionsForReview(section, data.questions, ad.id, roomId);
+                this.showNotification('Sorular oluşturuldu! İnceleyip kaydedin.', 'success');
+            } else {
+                throw new Error(data.detail || 'Soru oluşturulamadı');
+            }
+        } catch (error) {
+            console.error('Failed to generate questions:', error);
+            this.showNotification('Sorular oluşturulamadı: ' + error.message, 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.textContent = '🤖 Gemini ile Soru Oluştur';
+        }
+    }
+
+    showGeneratedQuestionsForReview(section, questions, adId, roomId) {
+        const questionsList = section.querySelector(`#questions-list-${adId}`);
+        const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+        questionsList.innerHTML = `
+            <div class="generated-questions-review">
+                <h5>Oluşturulan Sorular (İnceleyip onaylayın)</h5>
+                ${questions.map((q, idx) => `
+                    <div class="review-question" data-index="${idx}">
+                        <div class="review-question-header">
+                            <span>Soru ${idx + 1}</span>
+                            <button class="btn-icon btn-remove-generated" title="Kaldır">❌</button>
+                        </div>
+                        <textarea class="review-question-text">${q.question_text}</textarea>
+                        <div class="review-options">
+                            ${q.options.map((opt, i) => `
+                                <div class="review-option">
+                                    <input type="radio" name="correct-${idx}" value="${i}" ${i === q.correct_option_index ? 'checked' : ''}>
+                                    <span>${optionLabels[i]})</span>
+                                    <input type="text" class="review-option-text" value="${opt}">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="review-actions">
+                    <button class="btn btn-secondary btn-cancel-review">İptal</button>
+                    <button class="btn btn-primary btn-save-generated">💾 Soruları Kaydet</button>
+                </div>
+            </div>
+        `;
+
+        // Bind review events
+        questionsList.querySelector('.btn-cancel-review').addEventListener('click', () => {
+            this.loadQuestions(adId, roomId, section);
+        });
+
+        questionsList.querySelector('.btn-save-generated').addEventListener('click', () => {
+            this.saveGeneratedQuestions(questionsList, adId, roomId, section);
+        });
+
+        questionsList.querySelectorAll('.btn-remove-generated').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.target.closest('.review-question').remove();
+            });
+        });
+    }
+
+    async saveGeneratedQuestions(questionsList, adId, roomId, section) {
+        const reviewQuestions = questionsList.querySelectorAll('.review-question');
+        const questions = [];
+
+        reviewQuestions.forEach((rq, order) => {
+            const questionText = rq.querySelector('.review-question-text').value.trim();
+            const options = Array.from(rq.querySelectorAll('.review-option-text')).map(input => input.value.trim());
+            const correctIndex = parseInt(rq.querySelector('input[type="radio"]:checked')?.value || 0);
+
+            if (questionText) {
+                questions.push({
+                    question_text: questionText,
+                    options: options,
+                    correct_option_index: correctIndex,
+                    order: order
+                });
+            }
+        });
+
+        if (questions.length === 0) {
+            this.showNotification('En az bir soru olmalı!', 'error');
+            return;
+        }
+
+        try {
+            // First delete existing questions
+            await fetch(`/api/room/${roomId}/ad/${adId}/questions`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${api.token}`
+                }
+            });
+
+            // Then add new questions
+            await fetch(`/api/room/${roomId}/ad/${adId}/questions/bulk`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${api.token}`
+                },
+                body: JSON.stringify(questions)
+            });
+
+            this.showNotification('Sorular kaydedildi!', 'success');
+            this.loadQuestions(adId, roomId, section);
+        } catch (error) {
+            console.error('Failed to save questions:', error);
+            this.showNotification('Sorular kaydedilemedi!', 'error');
+        }
+    }
+
+    showManualQuestionForm(section, ad, roomId) {
+        const questionsList = section.querySelector(`#questions-list-${ad.id}`);
+        const optionLabels = ['A', 'B', 'C', 'D'];
+
+        const form = document.createElement('div');
+        form.className = 'manual-question-form';
+        form.innerHTML = `
+            <h5>Yeni Soru Ekle</h5>
+            <textarea class="manual-question-text" placeholder="Soru metnini girin..."></textarea>
+            <div class="manual-options">
+                ${optionLabels.map((label, i) => `
+                    <div class="manual-option">
+                        <input type="radio" name="manual-correct" value="${i}" ${i === 0 ? 'checked' : ''}>
+                        <span>${label})</span>
+                        <input type="text" class="manual-option-text" placeholder="Şık ${label}">
+                    </div>
+                `).join('')}
+            </div>
+            <div class="manual-form-actions">
+                <button class="btn btn-secondary btn-cancel-manual">İptal</button>
+                <button class="btn btn-primary btn-save-manual">Kaydet</button>
+            </div>
+        `;
+
+        questionsList.appendChild(form);
+
+        form.querySelector('.btn-cancel-manual').addEventListener('click', () => form.remove());
+        form.querySelector('.btn-save-manual').addEventListener('click', async () => {
+            const questionText = form.querySelector('.manual-question-text').value.trim();
+            const options = Array.from(form.querySelectorAll('.manual-option-text')).map(input => input.value.trim());
+            const correctIndex = parseInt(form.querySelector('input[name="manual-correct"]:checked').value);
+
+            if (!questionText || options.some(o => !o)) {
+                this.showNotification('Tüm alanları doldurun!', 'error');
+                return;
+            }
+
+            try {
+                await fetch(`/api/room/${roomId}/ad/${ad.id}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${api.token}`
+                    },
+                    body: JSON.stringify({
+                        question_text: questionText,
+                        options: options,
+                        correct_option_index: correctIndex,
+                        order: 0
+                    })
+                });
+
+                this.showNotification('Soru eklendi!', 'success');
+                this.loadQuestions(ad.id, roomId, section);
+            } catch (error) {
+                console.error('Failed to add question:', error);
+                this.showNotification('Soru eklenemedi!', 'error');
+            }
+        });
+    }
+
+    showEditQuestionForm(questionId, adId, roomId, questionItem) {
+        // TODO: Implement edit question form
+        this.showNotification('Düzenleme özelliği yakında eklenecek!', 'info');
+    }
+
+    async saveLockSettings(section, ad, roomId) {
+        const lockType = section.querySelector(`input[name="lock-type-${ad.id}"]:checked`)?.value || 'none';
+        const timerSeconds = parseInt(section.querySelector('.timer-seconds-input')?.value) || 10;
+        const description = section.querySelector('.ad-description-input')?.value.trim() || null;
+
+        try {
+            await fetch(`/api/room/${roomId}/ad/${ad.id}/lock-settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${api.token}`
+                },
+                body: JSON.stringify({
+                    lock_type: lockType,
+                    lock_timer_seconds: timerSeconds,
+                    ad_description: description
+                })
+            });
+
+            // Update local ad object
+            ad.lock_type = lockType;
+            ad.lock_timer_seconds = timerSeconds;
+            ad.ad_description = description;
+
+            this.showNotification('Kilit ayarları kaydedildi!', 'success');
+        } catch (error) {
+            console.error('Failed to save lock settings:', error);
+            this.showNotification('Kilit ayarları kaydedilemedi!', 'error');
+        }
     }
 
     async addOrUpdateAd(wall, section) {

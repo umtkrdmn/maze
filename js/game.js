@@ -41,6 +41,10 @@ class Game {
         this.lastFootstepTime = 0;
         this.footstepInterval = 400; // ms
 
+        // Door lock system
+        this.doorLockManager = null;
+        this.lastEntryDirection = null;
+
         // Make game globally accessible
         window.game = this;
 
@@ -68,6 +72,11 @@ class Game {
 
             // Mobile controls
             this.mobileControls = new MobileControls(this);
+
+            // Door lock manager
+            if (window.DoorLockManager) {
+                this.doorLockManager = new DoorLockManager(this);
+            }
 
             // Initialize sound manager on user interaction
             this.initSoundOnInteraction();
@@ -301,10 +310,34 @@ class Game {
     }
 
     async onRoomChange(direction) {
+        // Check if door is locked before proceeding
+        if (this.doorLockManager && this.doorLockManager.isDoorLocked(direction)) {
+            // Revert player position
+            if (direction === 'north') this.player.roomY++;
+            else if (direction === 'south') this.player.roomY--;
+            else if (direction === 'east') this.player.roomX--;
+            else if (direction === 'west') this.player.roomX++;
+
+            this.lastRoomX = this.player.roomX;
+            this.lastRoomY = this.player.roomY;
+
+            // Show quiz or notification
+            this.doorLockManager.onLockedDoorAttempt(direction);
+            return;
+        }
+
+        // Clean up door lock manager for current room
+        if (this.doorLockManager) {
+            this.doorLockManager.onRoomLeave();
+        }
+
         // Play door sound
         if (soundManager.initialized) {
             soundManager.playDoorOpen();
         }
+
+        // Store entry direction for door lock system
+        this.lastEntryDirection = direction;
 
         // For ServerRoomProvider, call moveToRoom with direction
         if (direction && this.roomProvider instanceof ServerRoomProvider) {
@@ -344,6 +377,11 @@ class Game {
 
         // Renderer'ı güncelle
         this.renderer.updateRoom(this.currentRoom);
+
+        // Initialize door lock manager for new room
+        if (this.doorLockManager && this.currentRoom) {
+            this.doorLockManager.onRoomEnter(this.currentRoom, this.lastEntryDirection);
+        }
 
         // Check for reward/trap in move result
         if (this.lastMoveResult) {

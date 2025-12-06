@@ -9,7 +9,11 @@ from database import get_db
 from services.room import RoomService
 from services.maze import MazeService
 from routes.auth import get_current_user
-from schemas import RoomDesignUpdate, RoomAdCreate
+from schemas import (
+    RoomDesignUpdate, RoomAdCreate, AdLockSettingsUpdate,
+    GenerateQuestionsRequest, AdQuestionCreate, AdQuestionUpdate,
+    AdQuestionResponse, QuizAnswerRequest
+)
 
 router = APIRouter(prefix="/api/room", tags=["room"])
 
@@ -383,3 +387,412 @@ async def proxy_media(url: str = Query(..., description="URL of the media to pro
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch media: {str(e)}"
         )
+
+
+# ==================== Door Lock System Endpoints ====================
+
+@router.put("/{room_id}/ad/{ad_id}/lock-settings")
+async def update_ad_lock_settings(
+    room_id: int,
+    ad_id: int,
+    settings: AdLockSettingsUpdate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update door lock settings for an ad"""
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    result = await room_service.update_ad_lock_settings(
+        ad,
+        current_user,
+        settings.lock_type,
+        settings.lock_timer_seconds or 10,
+        settings.ad_description
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return {"success": True, "message": "Lock settings updated"}
+
+
+@router.post("/{room_id}/ad/{ad_id}/generate-questions")
+async def generate_questions(
+    room_id: int,
+    ad_id: int,
+    request: GenerateQuestionsRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate questions using Gemini AI"""
+    from services.gemini import gemini_service
+
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    if ad.room.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't own this room"
+        )
+
+    if not ad.ad_description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ad description is required for question generation"
+        )
+
+    try:
+        questions = await gemini_service.generate_questions(
+            ad.ad_description,
+            request.question_count,
+            request.option_count
+        )
+
+        return {
+            "success": True,
+            "questions": questions
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{room_id}/ad/{ad_id}/questions")
+async def get_ad_questions(
+    room_id: int,
+    ad_id: int,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all questions for an ad"""
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    questions = await room_service.get_ad_questions(ad_id)
+
+    return {
+        "questions": [
+            {
+                "id": q.id,
+                "question_text": q.question_text,
+                "options": q.options,
+                "correct_option_index": q.correct_option_index,
+                "order": q.order
+            }
+            for q in questions
+        ]
+    }
+
+
+@router.post("/{room_id}/ad/{ad_id}/questions")
+async def add_question(
+    room_id: int,
+    ad_id: int,
+    question_data: AdQuestionCreate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a question to an ad"""
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    result = await room_service.add_question(
+        ad,
+        current_user,
+        question_data.question_text,
+        question_data.options,
+        question_data.correct_option_index,
+        question_data.order or 0
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return result
+
+
+@router.post("/{room_id}/ad/{ad_id}/questions/bulk")
+async def bulk_add_questions(
+    room_id: int,
+    ad_id: int,
+    questions: List[AdQuestionCreate],
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add multiple questions at once (for Gemini-generated questions)"""
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    questions_data = [
+        {
+            "question_text": q.question_text,
+            "options": q.options,
+            "correct_option_index": q.correct_option_index,
+            "order": q.order or i
+        }
+        for i, q in enumerate(questions)
+    ]
+
+    result = await room_service.bulk_add_questions(ad, current_user, questions_data)
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return result
+
+
+@router.put("/{room_id}/ad/{ad_id}/questions/{question_id}")
+async def update_question(
+    room_id: int,
+    ad_id: int,
+    question_id: int,
+    question_data: AdQuestionUpdate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a question"""
+    room_service = RoomService(db)
+
+    result = await room_service.update_question(
+        question_id,
+        current_user,
+        question_data.question_text,
+        question_data.options,
+        question_data.correct_option_index,
+        question_data.order
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return {"success": True, "message": "Question updated"}
+
+
+@router.delete("/{room_id}/ad/{ad_id}/questions/{question_id}")
+async def delete_question(
+    room_id: int,
+    ad_id: int,
+    question_id: int,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a question"""
+    room_service = RoomService(db)
+
+    result = await room_service.delete_question(question_id, current_user)
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return {"success": True, "message": "Question deleted"}
+
+
+@router.delete("/{room_id}/ad/{ad_id}/questions")
+async def delete_all_questions(
+    room_id: int,
+    ad_id: int,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete all questions for an ad"""
+    room_service = RoomService(db)
+
+    ad = await room_service.get_ad_by_id(ad_id)
+    if not ad or ad.room_id != room_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ad not found"
+        )
+
+    result = await room_service.delete_all_questions(ad, current_user)
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return {"success": True, "message": "All questions deleted"}
+
+
+# ==================== Game-time Quiz Endpoints ====================
+
+@router.get("/{room_id}/door-status")
+async def get_door_status(
+    room_id: int,
+    entry_door: str = Query(None, description="The door player entered from"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get door lock status for a room (used during gameplay)"""
+    room_service = RoomService(db)
+
+    room = await room_service.get_room_by_id(room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Room not found"
+        )
+
+    ads = await room_service.get_room_ads_with_lock_info(room)
+
+    # Check if room has any ads with lock enabled
+    has_lock = any(ad["lock_type"] != "none" for ad in ads)
+
+    # Build door status
+    doors = []
+    for direction in ["north", "south", "east", "west"]:
+        has_door = getattr(room, f"door_{direction}", False)
+        if not has_door:
+            continue
+
+        # Entry door is always unlocked
+        is_entry = direction == entry_door
+        is_locked = has_lock and not is_entry
+
+        # Find lock info for this direction
+        lock_type = None
+        lock_timer = None
+        has_quiz = False
+
+        for ad in ads:
+            if ad["lock_type"] != "none":
+                lock_type = ad["lock_type"]
+                lock_timer = ad["lock_timer_seconds"]
+                has_quiz = ad["has_questions"]
+                break
+
+        doors.append({
+            "direction": direction,
+            "is_locked": is_locked,
+            "lock_type": lock_type if is_locked else None,
+            "remaining_seconds": lock_timer if is_locked and lock_type == "timer" else None,
+            "has_quiz": has_quiz if is_locked else False
+        })
+
+    return {
+        "entry_door": entry_door,
+        "doors": doors,
+        "has_ads": len(ads) > 0,
+        "ads": ads
+    }
+
+
+@router.get("/{room_id}/quiz-question")
+async def get_quiz_question(
+    room_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get a random quiz question for the room's ad"""
+    room_service = RoomService(db)
+
+    room = await room_service.get_room_by_id(room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Room not found"
+        )
+
+    # Find an ad with quiz lock type
+    ads = await room_service.get_room_ads_with_lock_info(room)
+    quiz_ad = None
+    for ad in ads:
+        if ad["lock_type"] == "quiz" and ad["has_questions"]:
+            quiz_ad = ad
+            break
+
+    if not quiz_ad:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No quiz available for this room"
+        )
+
+    question = await room_service.get_random_question_for_ad(quiz_ad["id"])
+    if not question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No questions available"
+        )
+
+    return {
+        "question_id": question.id,
+        "question_text": question.question_text,
+        "options": question.options
+        # Note: correct_option_index is NOT sent to client
+    }
+
+
+@router.post("/{room_id}/quiz-answer")
+async def check_quiz_answer(
+    room_id: int,
+    answer: QuizAnswerRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Check quiz answer and unlock doors if correct"""
+    room_service = RoomService(db)
+
+    result = await room_service.check_quiz_answer(
+        answer.question_id,
+        answer.selected_option_index
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+
+    return {
+        "correct": result["correct"],
+        "correct_option_index": result["correct_option_index"],
+        "unlock_doors": result["correct"],
+        "cooldown_seconds": 10 if not result["correct"] else None
+    }
